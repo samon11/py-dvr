@@ -81,19 +81,20 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
 
 ---
 
-### [P0] Task 1.3: Database Setup
+### [P0] Task 1.3: Database Setup ✅
 **Estimate:** 2 hours
+**Status:** COMPLETED
 
-- [ ] Create SQLAlchemy models in `app/models/`:
+- [x] Create SQLAlchemy models in `app/models/`:
   - Station (simplified: id, callsign, channel_number, name)
   - Program (simplified: id, title, description, duration_seconds)
   - Schedule (id, program_id, station_id, air_datetime, duration_seconds)
   - Recording (id, schedule_id, status, file_path, padding_start, padding_end)
-- [ ] Keep it minimal - only essential fields
-- [ ] Create Alembic migration for initial schema
-- [ ] Create database initialization function
+- [x] Keep it minimal - only essential fields
+- [x] Create Alembic migration for initial schema
+- [x] Create database initialization function
 
-**Deliverable:** Working database with basic schema
+**Deliverable:** Working database with basic schema ✅
 
 ---
 
