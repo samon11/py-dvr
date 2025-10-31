@@ -25,11 +25,12 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
 
 ## Phase 1: Foundation (Days 1-2)
 
-### [P0] Task 1.1: Project Setup
+### [P0] Task 1.1: Project Setup ✅
 **Estimate:** 1 hour
+**Status:** COMPLETED
 
-- [ ] Initialize git repository
-- [ ] Create Python project structure:
+- [x] Initialize git repository
+- [x] Create Python project structure:
   ```
   pyhdhrdvr/
   ├── app/
@@ -46,7 +47,7 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
   ├── .env.example
   └── README.md
   ```
-- [ ] Create pyproject.toml with dependencies:
+- [x] Create pyproject.toml with dependencies:
   - fastapi
   - uvicorn
   - sqlalchemy
@@ -54,9 +55,9 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
   - pydantic
   - httpx
   - jinja2
-- [ ] Create basic README.md
+- [x] Create basic README.md
 
-**Deliverable:** Project structure with installable package
+**Deliverable:** Project structure with installable package ✅
 
 ---
 
