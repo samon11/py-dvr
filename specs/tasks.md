@@ -61,10 +61,11 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
 
 ---
 
-### [P0] Task 1.2: Configuration Management
+### [P0] Task 1.2: Configuration Management ✅
 **Estimate:** 1 hour
+**Status:** COMPLETED
 
-- [ ] Create `app/config.py` with Pydantic settings:
+- [x] Create `app/config.py` with Pydantic settings:
   - `HDHOMERUN_IP`: str
   - `SD_USERNAME`: str
   - `SD_PASSWORD`: str
@@ -72,11 +73,11 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
   - `DATABASE_URL`: str
   - `DEFAULT_PADDING_START`: int (default: 60)
   - `DEFAULT_PADDING_END`: int (default: 120)
-- [ ] Support loading from `.env` file
-- [ ] Add validation for required fields
-- [ ] Create `.env.example` template
+- [x] Support loading from `.env` file
+- [x] Add validation for required fields
+- [x] Create `.env.example` template
 
-**Deliverable:** Working configuration system
+**Deliverable:** Working configuration system ✅
 
 ---
 
