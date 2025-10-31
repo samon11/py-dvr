@@ -7,6 +7,7 @@ A web-based DVR management interface for HDHomeRun network TV tuner devices. Sch
 ## Features
 
 - Browse TV program schedules from Schedules Direct
+- Invokes [Schedules Direct API](https://github.com/SchedulesDirect/JSON-Service/wiki/API-20141201) for guide data
 - Schedule one-time recordings
 - Automatic recording execution with configurable padding
 - Simple web interface for recording management
@@ -217,7 +218,7 @@ This is the MVP (Minimum Viable Product) version. Current features:
 
 ## License
 
-[Add your license here]
+MIT License. See `LICENSE` file for details.
 
 ## Contributing
 
