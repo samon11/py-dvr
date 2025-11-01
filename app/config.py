@@ -105,6 +105,11 @@ class Settings(BaseSettings):
         pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$",
     )
 
+    token_cache_path: Path = Field(
+        default=Path("./sd_token_cache.json"),
+        description="Path to Schedules Direct token cache file",
+    )
+
     @field_validator("hdhomerun_ip")
     @classmethod
     def validate_ip_format(cls, v: str) -> str:
@@ -138,21 +143,6 @@ class Settings(BaseSettings):
             raise
 
         return v
-
-    @field_validator("sd_username")
-    @classmethod
-    def validate_email_format(cls, v: str) -> str:
-        """Validate that SD username looks like an email address."""
-        if not v or v.strip() == "":
-            raise ValueError("Schedules Direct username cannot be empty")
-
-        if "@" not in v or "." not in v.split("@")[-1]:
-            raise ValueError(
-                f"Invalid email format for SD username: {v}. "
-                "Expected format: user@example.com"
-            )
-
-        return v.strip()
 
     @field_validator("recording_path")
     @classmethod
