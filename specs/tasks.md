@@ -153,14 +153,14 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
 ### [P0] Task 2.3: HDHomeRun Client - Basic Communication
 **Estimate:** 2 hours
 
-- [ ] Create `app/services/hdhomerun.py`
-- [ ] Implement device info retrieval:
+- [x] Create `app/services/hdhomerun.py`
+- [x] Implement device info retrieval:
   - GET `http://{device_ip}/discover.json`
   - Parse device model, tuner count
-- [ ] Implement tuner status check:
+- [x] Implement tuner status check:
   - GET `http://{device_ip}/tuner{N}/`
   - Parse tuner availability
-- [ ] Test connection to real HDHomeRun device
+- [x] Test connection to real HDHomeRun device
 
 **Deliverable:** Working device communication
 
@@ -169,16 +169,16 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
 ### [P0] Task 2.4: HDHomeRun Client - Recording
 **Estimate:** 3 hours
 
-- [ ] Implement channel tuning:
+- [x] Implement channel tuning:
   - POST `http://{device_ip}/tuner{N}/channel/{channel}`
   - Verify tuner lock
-- [ ] Implement stream capture:
+- [x] Implement stream capture:
   - GET `http://{device_ip}/tuner{N}/` (MPEG-TS stream)
   - Write chunks to file
   - Handle stream interruptions
-- [ ] Implement tuner release:
+- [x] Implement tuner release:
   - POST `http://{device_ip}/tuner{N}/channel/none`
-- [ ] Create test recording function (record 30 seconds)
+- [x] Create test recording function (record 30 seconds)
 
 **Deliverable:** Function that can record a channel to file
 
@@ -212,7 +212,6 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
 - [ ] Create recording directory if needed
 - [ ] Implement recording workflow:
   1. Find available tuner
-  2. Tune to channel
   3. Capture stream to file
   4. Monitor for errors
   5. Stop at end time + padding
