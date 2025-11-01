@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+
+{% block title %}Recordings Library - PyHDHRDVR{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header with Storage Stats -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Recordings Library</h1>
+                <p class="text-gray-600 mt-2">View and manage completed recordings</p>
+            </div>
+            <div class="text-right">
+                <p class="text-3xl font-bold text-green-600">{{ storage_stats.recordings_count }}</p>
+                <p class="text-sm text-gray-600">Recordings</p>
+            </div>
+        </div>
+
+        <!-- Storage Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
+            <div class="text-center">
+                <p class="text-sm text-gray-600">Total Size</p>
+                <p class="text-lg font-semibold text-gray-900">{{ storage_stats.total_recordings_size }}</p>
+            </div>
+            <div class="text-center">
+                <p class="text-sm text-gray-600">Free Space</p>
+                <p class="text-lg font-semibold text-gray-900">{{ storage_stats.free_space }}</p>
+            </div>
+            <div class="text-center">
+                <p class="text-sm text-gray-600">Used Space</p>
+                <p class="text-lg font-semibold text-gray-900">{{ storage_stats.used_space }}</p>
+            </div>
+            <div class="text-center">
+                <p class="text-sm text-gray-600">Free</p>
+                <p class="text-lg font-semibold text-gray-900">{{ storage_stats.percent_free }}%</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification (hidden by default) -->
+    <div id="toast" class="fixed top-20 right-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg border-l-4 p-4 max-w-md">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <span id="toast-icon"></span>
+                </div>
+                <div class="ml-3 flex-1">
+                    <p id="toast-message" class="text-sm font-medium text-gray-900"></p>
+                </div>
+                <button onclick="hideToast()" class="ml-3 flex-shrink-0 text-gray-400 hover:text-gray-600">
+                    <span class="text-xl">&times;</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recordings List -->
+    {% if recordings %}
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="divide-y divide-gray-200">
+                {% for recording in recordings %}
+                <div class="p-6 hover:bg-gray-50 transition-colors" data-recording-id="{{ recording.recording_id }}">
+                    <div class="flex items-start justify-between">
+                        <!-- Recording Info -->
+                        <div class="flex-1 mr-4">
+                            <!-- Status Badge and Air Date -->
+                            <div class="flex items-center space-x-3 mb-2">
+                                <!-- Completed Badge -->
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Completed
+                                </span>
+
+                                <!-- Air Date -->
+                                <span class="text-lg font-semibold text-gray-900 air-date" data-utc-time="{{ recording.air_datetime_utc }}">
+                                    Loading...
+                                </span>
+                            </div>
+
+                            <!-- Program Title -->
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">
+                                {{ recording.program_title }}
+                            </h3>
+
+                            <!-- Channel Info -->
+                            <div class="flex items-center space-x-2 text-sm text-gray-600 mb-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"></path>
+                                </svg>
+                                <span class="font-medium">{{ recording.channel_number }}</span>
+                                <span>{{ recording.channel_name }}</span>
+                            </div>
+
+                            <!-- Recording Details -->
+                            <div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-2">
+                                <div class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span>Duration: {{ recording.duration_minutes }} min</span>
+                                </div>
+                                <div class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                                    </svg>
+                                    <span>Size: {{ recording.file_size_formatted }}</span>
+                                </div>
+                            </div>
+
+                            <!-- File Path -->
+                            <div class="mt-2 text-xs">
+                                {% if recording.file_exists %}
+                                <div class="flex items-center space-x-1 text-gray-500">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <span class="font-mono break-all">{{ recording.file_path }}</span>
+                                </div>
+                                {% else %}
+                                <div class="flex items-center space-x-1 text-red-500">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                    </svg>
+                                    <span>File not found: {{ recording.file_path }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex-shrink-0 flex flex-col space-y-2">
+                            <button
+                                onclick="deleteRecording({{ recording.recording_id }}, '{{ recording.program_title|replace("'", "\\'") }}')"
+                                class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium text-sm transition-colors flex items-center space-x-2"
+                                data-recording-id="{{ recording.recording_id }}"
+                                aria-label="Delete recording of {{ recording.program_title }}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                                <span>Delete</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <!-- Empty State -->
+        <div class="bg-white rounded-lg shadow-md p-12 text-center">
+            <div class="text-6xl mb-4">📼</div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">No Recordings Yet</h2>
+            <p class="text-gray-600 mb-6">
+                You haven't recorded anything yet.
+            </p>
+            <p class="text-gray-600 mb-6">
+                Schedule recordings from the TV guide to start building your library.
+            </p>
+            <div class="mt-8">
+                <a href="/guide" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium">
+                    Browse TV Guide
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Loading Spinner (hidden by default) -->
+    <div id="loading-spinner" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-lg font-medium text-gray-900">Processing...</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Convert all UTC dates to browser local date format on page load
+    function convertUTCDatesToLocal() {
+        const dateElements = document.querySelectorAll('.air-date');
+
+        dateElements.forEach(element => {
+            const utcTimeString = element.getAttribute('data-utc-time');
+            if (!utcTimeString) return;
+
+            try {
+                // Parse the UTC datetime
+                const utcDate = new Date(utcTimeString);
+
+                // Format date in local timezone (e.g., "Mon 11/4/2024")
+                const dateString = utcDate.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'numeric',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+
+                element.textContent = dateString;
+
+                // Store the date object for sorting if needed
+                element.dataset.localDate = utcDate.toISOString();
+            } catch (error) {
+                console.error('Error converting date:', error);
+                element.textContent = 'Invalid date';
+            }
+        });
+    }
+
+    // Run conversion when page loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', convertUTCDatesToLocal);
+    } else {
+        convertUTCDatesToLocal();
+    }
+
+    window.addEventListener('load', function() {
+        const loadingElements = document.querySelectorAll('.air-date');
+        const needsConversion = Array.from(loadingElements).some(el => el.textContent === 'Loading...');
+        if (needsConversion) {
+            convertUTCDatesToLocal();
+        }
+    });
+
+    // Toast notification functions
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        const toastIcon = document.getElementById('toast-icon');
+        const toastMessage = document.getElementById('toast-message');
+        const toastContainer = toast.querySelector('div');
+
+        // Set icon and color based on type
+        if (type === 'success') {
+            toastIcon.textContent = '✓';
+            toastIcon.className = 'text-2xl text-green-600';
+            toastContainer.className = 'bg-white rounded-lg shadow-lg border-l-4 border-green-500 p-4 max-w-md';
+        } else if (type === 'error') {
+            toastIcon.textContent = '✕';
+            toastIcon.className = 'text-2xl text-red-600';
+            toastContainer.className = 'bg-white rounded-lg shadow-lg border-l-4 border-red-500 p-4 max-w-md';
+        } else if (type === 'info') {
+            toastIcon.textContent = 'ℹ';
+            toastIcon.className = 'text-2xl text-blue-600';
+            toastContainer.className = 'bg-white rounded-lg shadow-lg border-l-4 border-blue-500 p-4 max-w-md';
+        }
+
+        toastMessage.textContent = message;
+        toast.classList.remove('hidden');
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            hideToast();
+        }, 5000);
+    }
+
+    function hideToast() {
+        document.getElementById('toast').classList.add('hidden');
+    }
+
+    // Show/hide loading spinner
+    function showLoading() {
+        document.getElementById('loading-spinner').classList.remove('hidden');
+    }
+
+    function hideLoading() {
+        document.getElementById('loading-spinner').classList.add('hidden');
+    }
+
+    // Delete recording function
+    async function deleteRecording(recordingId, programTitle) {
+        // Confirm deletion
+        if (!confirm(`Are you sure you want to delete "${programTitle}"?\n\nThis will delete both the database entry and the video file. This action cannot be undone.`)) {
+            return;
+        }
+
+        // Show loading state
+        showLoading();
+
+        try {
+            // Call API endpoint to delete recording
+            const response = await fetch(`/api/recordings/${recordingId}/delete`, {
+                method: 'DELETE',
+            });
+
+            hideLoading();
+
+            if (!response.ok) {
+                // Handle HTTP errors
+                const data = await response.json();
+                throw new Error(data.detail || 'Failed to delete recording');
+            }
+
+            // Show success message
+            showToast(`Successfully deleted recording of "${programTitle}"`, 'success');
+
+            // Remove the recording from the page
+            const recordingElement = document.querySelector(`[data-recording-id="${recordingId}"]`);
+            if (recordingElement) {
+                recordingElement.style.opacity = '0';
+                setTimeout(() => {
+                    recordingElement.remove();
+
+                    // Check if there are any recordings left
+                    const remainingRecordings = document.querySelectorAll('[data-recording-id]').length;
+                    if (remainingRecordings === 0) {
+                        // Reload page to show empty state and updated stats
+                        window.location.reload();
+                    } else {
+                        // Reload to update storage stats
+                        window.location.reload();
+                    }
+                }, 300);
+            }
+
+        } catch (error) {
+            hideLoading();
+            console.error('Error deleting recording:', error);
+            showToast(error.message, 'error');
+        }
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(event) {
+        // Close toast with Escape key
+        if (event.key === 'Escape') {
+            hideToast();
+        }
+    });
+</script>
+{% endblock %}

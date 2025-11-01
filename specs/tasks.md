@@ -289,14 +289,14 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
 ### [P0] Task 4.4: Recordings Library Page
 **Estimate:** 2 hours
 
-- [ ] Create route: `GET /recordings` in `app/routes/recordings.py`
-- [ ] Create template: `templates/recordings.html`
-- [ ] Display completed recordings as list:
+- [x] Create route: `GET /recordings` in `app/routes/recordings.py`
+- [x] Create template: `templates/recordings.html`
+- [x] Display completed recordings as list:
   - Show: program title, air date, file size
   - Filter: status='completed'
-- [ ] Show file path for each recording
-- [ ] Add "Delete" button (deletes DB entry + file)
-- [ ] Show storage stats (total used, free space)
+- [x] Show file path for each recording
+- [x] Add "Delete" button (deletes DB entry + file)
+- [x] Show storage stats (total used, free space)
 
 **Deliverable:** User can view and delete recordings
 
