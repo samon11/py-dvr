@@ -355,10 +355,9 @@ class RecordingScheduler:
         """
         Generate output file path for a recording.
 
-        For MVP, we use a simple format:
-        {title} ({date}).ts
-
-        Future enhancements could organize by series, season/episode, etc.
+        Organizes recordings into subdirectories based on content type:
+        - Episodes: {SeriesTitle}/S{season:02d}E{episode:02d} - {EpisodeTitle}.ts
+        - Non-episodes: OneTime/{Title} ({date} {time}).ts
 
         Args:
             program: Program being recorded
@@ -368,23 +367,48 @@ class RecordingScheduler:
         Returns:
             Path to the output file
         """
-        # Format date/time for filename
-        air_date = schedule.air_datetime.strftime("%Y-%m-%d")
-        air_time = schedule.air_datetime.strftime("%H%M")
+        base_dir = self.settings.recording_path
 
-        # Build filename: Title (YYYY-MM-DD HHMM).ts
-        title = self._sanitize_filename(program.title)
-        filename = f"{title} ({air_date} {air_time}).ts"
+        # Check if this is an episode (has both season and episode numbers)
+        is_episode = program.season is not None and program.episode is not None
 
-        # Use recording path from settings
-        output_dir = self.settings.recording_path
+        if is_episode:
+            # Episode naming: SeriesTitle/S##E## - EpisodeTitle.ts
+            series_title = self._sanitize_filename(program.title)
+            output_dir = base_dir / series_title
+
+            # Create series subdirectory if it doesn't exist
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            # Build episode filename
+            season_episode = f"S{program.season:02d}E{program.episode:02d}"
+            if program.episode_title:
+                episode_title = self._sanitize_filename(program.episode_title)
+                filename = f"{season_episode} - {episode_title}.ts"
+            else:
+                filename = f"{season_episode}.ts"
+        else:
+            # Non-episodic naming: OneTime/Title (YYYY-MM-DD HHMM).ts
+            output_dir = base_dir / "OneTime"
+
+            # Create OneTime subdirectory if it doesn't exist
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            # Format date/time for filename
+            air_date = schedule.air_datetime.strftime("%Y-%m-%d")
+            air_time = schedule.air_datetime.strftime("%H%M")
+
+            title = self._sanitize_filename(program.title)
+            filename = f"{title} ({air_date} {air_time}).ts"
+
         output_path = output_dir / filename
 
         # Handle duplicate filenames by appending a counter
         if output_path.exists():
             counter = 1
+            base_name = output_path.stem
             while output_path.exists():
-                filename = f"{title} ({air_date} {air_time}) ({counter}).ts"
+                filename = f"{base_name} ({counter}){output_path.suffix}"
                 output_path = output_dir / filename
                 counter += 1
 

@@ -27,10 +27,13 @@ class Program(Base):
         title: Program title (e.g., "NOVA", "The Shawshank Redemption")
         description: Full description/synopsis of the program
         duration_seconds: Standard duration in seconds
+        season: Season number for episodic content (nullable)
+        episode: Episode number within season (nullable)
+        episode_title: Episode-specific title (nullable)
         schedules: Relationship to Schedule entries for airings of this program
 
     MVP Simplifications:
-        - No series_id, episode_title, season/episode numbers (post-MVP)
+        - No series_id (post-MVP, for linking episodes to series)
         - No genres, cast_crew, artwork (post-MVP)
         - No original_air_date, content_rating (post-MVP)
         - No is_movie, is_sports flags (post-MVP)
@@ -72,6 +75,25 @@ class Program(Base):
         Integer,
         nullable=False,
         doc="Standard program duration in seconds"
+    )
+
+    # Episode metadata (for series episodes)
+    season: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        doc="Season number for episodic content"
+    )
+
+    episode: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        doc="Episode number within season"
+    )
+
+    episode_title: Mapped[str | None] = mapped_column(
+        String(256),
+        nullable=True,
+        doc="Episode-specific title (e.g., 'Pilot', 'The One with the Jellyfish')"
     )
 
     # Relationships

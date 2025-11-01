@@ -390,18 +390,49 @@ class GuideDataSync:
                     if descriptions and len(descriptions) > 0:
                         description = descriptions[0].description
 
+                # Extract episode metadata from Gracenote or TVmaze metadata
+                season = None
+                episode = None
+                episode_title = program_data.episodeTitle150
+
+                if program_data.metadata:
+                    # metadata is a list of dicts, each dict has provider-specific keys
+                    # Try Gracenote first, fall back to TVmaze
+                    for metadata_dict in program_data.metadata:
+                        # The dict has keys like "Gracenote" or "TVmaze"
+                        if "Gracenote" in metadata_dict and metadata_dict["Gracenote"]:
+                            gracenote_data = metadata_dict["Gracenote"]
+                            if hasattr(gracenote_data, "season") and gracenote_data.season:
+                                season = gracenote_data.season
+                            if hasattr(gracenote_data, "episode") and gracenote_data.episode:
+                                episode = gracenote_data.episode
+                            break
+                        elif "TVmaze" in metadata_dict and metadata_dict["TVmaze"]:
+                            tvmaze_data = metadata_dict["TVmaze"]
+                            if hasattr(tvmaze_data, "season") and tvmaze_data.season:
+                                season = tvmaze_data.season
+                            if hasattr(tvmaze_data, "episode") and tvmaze_data.episode:
+                                episode = tvmaze_data.episode
+                            break
+
                 stmt = insert(Program).values(
                     id=program_data.programID,
                     title=program_data.titles[0].title120 if program_data.titles else "Unknown",
                     description=description,
-                    duration_seconds=program_data.duration or 3600  # Default 1 hour if not provided
+                    duration_seconds=program_data.duration or 3600,  # Default 1 hour if not provided
+                    season=season,
+                    episode=episode,
+                    episode_title=episode_title
                 )
                 stmt = stmt.on_conflict_do_update(
                     index_elements=["program_id"],
                     set_={
                         "title": program_data.titles[0].title120 if program_data.titles else "Unknown",
                         "description": description,
-                        "duration_seconds": program_data.duration or 3600
+                        "duration_seconds": program_data.duration or 3600,
+                        "season": season,
+                        "episode": episode,
+                        "episode_title": episode_title
                     }
                 )
                 self.db.execute(stmt)

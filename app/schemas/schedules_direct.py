@@ -284,7 +284,7 @@ class ProgramResponse(BaseModel):
     crew: Optional[List[CastCrewMember]] = None
     episodeTitle150: Optional[str] = None
     duration: Optional[int] = None
-    metadata: Optional[List[Dict[str, ProgramMetadata]]] = None
+    metadata: Optional[List[Dict[str, ProgramMetadataEntry]]] = None
     hasImageArtwork: Optional[bool] = False
     hasEpisodeArtwork: Optional[bool] = False
     hasSeasonArtwork: Optional[bool] = False

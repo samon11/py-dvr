@@ -11,7 +11,7 @@ from typing import List, Dict, Any
 
 from fastapi import APIRouter, Depends, Request, Query
 from fastapi.responses import HTMLResponse
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
@@ -133,8 +133,13 @@ async def guide_page(
 
         logger.info(f"Fetching guide data for station {station_id} on {date}")
 
+        # Get current time in UTC to filter out past programs
+        current_time_utc = datetime.utcnow()
+
         # Query schedules for the selected station and date
-        schedules = (
+        # Only show programs that haven't ended yet
+        # We'll filter in Python after the query since SQLite doesn't support datetime arithmetic easily
+        all_schedules = (
             db.query(Schedule)
             .options(
                 joinedload(Schedule.program),
@@ -150,6 +155,13 @@ async def guide_page(
             .order_by(Schedule.air_datetime)
             .all()
         )
+
+        # Filter out programs that have already ended
+        # A program has ended if: air_datetime + duration_seconds < current_time
+        schedules = [
+            schedule for schedule in all_schedules
+            if schedule.air_datetime + timedelta(seconds=schedule.duration_seconds) >= current_time_utc
+        ]
 
         logger.info(f"Found {len(schedules)} programs for station {station_id} on {date}")
 
