@@ -13,7 +13,7 @@ sys.path.insert(0, str(project_root))
 import asyncio
 import click
 
-from app.database import get_db
+from app.database import get_db, is_database_empty, run_migrations
 from app.services.guide_sync import GuideDataSync
 
 
@@ -36,6 +36,16 @@ def sync_guide(days: int):
         python -m app.cli sync-guide
         python -m app.cli sync-guide --days 7
     """
+    # Check if database needs initialization
+    if is_database_empty():
+        click.echo(click.style("Database is empty. Running migrations...", fg="yellow"))
+        try:
+            run_migrations()
+            click.echo(click.style("Migrations completed successfully!", fg="green"))
+        except Exception as e:
+            click.echo(click.style(f"Migration failed: {e}", fg="red"), err=True)
+            raise
+
     click.echo(f"Starting guide data sync for {days} days...")
 
     db = next(get_db())
