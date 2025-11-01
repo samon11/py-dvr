@@ -418,8 +418,7 @@
         showLoading();
 
         try {
-            // TODO (Task 4.2): Replace with actual API endpoint when implemented
-            // For now, this is a placeholder structure
+            // Call API endpoint to schedule recording
             const response = await fetch(`/api/recordings`, {
                 method: 'POST',
                 headers: {
@@ -427,9 +426,9 @@
                 },
                 body: JSON.stringify({
                     schedule_id: scheduleId,
-                    // Additional fields can be added here when the API is implemented
-                    // padding_start: 60,
-                    // padding_end: 120,
+                    // Optional: Override default padding values
+                    // padding_start_seconds: 60,
+                    // padding_end_seconds: 120,
                 }),
             });
 

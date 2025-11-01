@@ -13,3 +13,4 @@ wheels/
 *.db
 .env
 sd_token_cache.json
+test_recordings/

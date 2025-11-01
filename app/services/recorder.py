@@ -133,9 +133,16 @@ class RecordingScheduler:
         # Query for scheduled recordings that should start soon
         # Note: We can't subtract timedelta from datetime in SQL, so we fetch all
         # scheduled recordings and filter in Python
+        # Use eager loading to avoid lazy load issues with datetime parsing
+        from sqlalchemy.orm import joinedload
+
         stmt = (
             select(Recording)
             .join(Schedule)
+            .options(
+                joinedload(Recording.schedule).joinedload(Schedule.program),
+                joinedload(Recording.schedule).joinedload(Schedule.station)
+            )
             .where(Recording.status == RecordingStatus.SCHEDULED)
             .where(Schedule.air_datetime <= lookahead)
             .order_by(Schedule.air_datetime)
@@ -152,7 +159,13 @@ class RecordingScheduler:
         for recording in recordings:
             # Calculate actual start time (air_datetime - padding)
             schedule = recording.schedule
-            start_time = schedule.air_datetime - timedelta(seconds=recording.padding_start_seconds)
+
+            # Ensure air_datetime is timezone-aware (assume UTC if naive)
+            air_dt = schedule.air_datetime
+            if air_dt.tzinfo is None:
+                air_dt = air_dt.replace(tzinfo=timezone.utc)
+
+            start_time = (air_dt - timedelta(seconds=recording.padding_start_seconds))
 
             # Check if it's time to start this recording
             if start_time <= now:

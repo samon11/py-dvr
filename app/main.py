@@ -138,9 +138,10 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # Register routers
-from app.routes import lineups, guide
+from app.routes import lineups, guide, recordings
 app.include_router(lineups.router)
 app.include_router(guide.router)
+app.include_router(recordings.router)
 
 
 # Health Check Endpoint
