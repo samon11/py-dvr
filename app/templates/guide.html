@@ -6,54 +6,51 @@
 <div class="space-y-6">
     <!-- Page Header -->
     <div class="bg-white rounded-lg shadow-md p-6">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">TV Guide</h1>
-                <p class="text-gray-600 mt-2">Browse upcoming programs</p>
-            </div>
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">TV Guide</h1>
+            <p class="text-gray-600 mt-2">Browse programs by channel and date</p>
+        </div>
 
-            <!-- Time Range Selector -->
-            <div class="flex items-center space-x-3">
-                <label for="time-range" class="text-sm font-medium text-gray-700">Time Range:</label>
+        <!-- Channel and Date Selectors -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Channel Selector -->
+            <div>
+                <label for="channel-select" class="block text-sm font-medium text-gray-700 mb-2">
+                    Select Channel
+                </label>
                 <select
-                    id="time-range"
-                    onchange="changeTimeRange(this.value)"
-                    class="block w-48 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border">
-                    <option value="3" {% if hours == 3 %}selected{% endif %}>Next 3 hours</option>
-                    <option value="6" {% if hours == 6 %}selected{% endif %}>Next 6 hours</option>
-                    <option value="12" {% if hours == 12 or not hours %}selected{% endif %}>Next 12 hours</option>
-                    <option value="24" {% if hours == 24 %}selected{% endif %}>Next 24 hours</option>
-                    <option value="48" {% if hours == 48 %}selected{% endif %}>Next 48 hours</option>
+                    id="channel-select"
+                    onchange="updateGuide()"
+                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border">
+                    <option value="">-- Choose a channel --</option>
+                    {% for station in stations %}
+                    <option value="{{ station.id }}" {% if station.id == selected_station_id %}selected{% endif %}>
+                        {{ station.display_text }}
+                    </option>
+                    {% endfor %}
                 </select>
             </div>
+
+            <!-- Date Picker -->
+            <div>
+                <label for="date-select" class="block text-sm font-medium text-gray-700 mb-2">
+                    Select Date
+                </label>
+                <input
+                    type="date"
+                    id="date-select"
+                    onchange="updateGuide()"
+                    value="{{ selected_date or '' }}"
+                    min="{{ today_date }}"
+                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border">
+            </div>
         </div>
 
-        <!-- Search Bar -->
-        <div class="mt-4">
-            <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </div>
-                <input
-                    type="text"
-                    id="search-input"
-                    placeholder="Search programs by title..."
-                    onkeyup="filterPrograms(this.value)"
-                    class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                {% if search_query %}
-                <button
-                    onclick="clearSearch()"
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-                {% endif %}
-            </div>
-            <p id="search-results" class="text-sm text-gray-500 mt-2"></p>
+        {% if error %}
+        <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+            <p class="text-sm text-red-800">{{ error }}</p>
         </div>
+        {% endif %}
     </div>
 
     <!-- Toast Notification (hidden by default) -->
@@ -74,132 +71,124 @@
     </div>
 
     <!-- Guide Content -->
-    {% if programs_by_channel %}
-        <div class="space-y-4">
-            {% for channel_data in programs_by_channel %}
-            <!-- Channel Section -->
-            <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                <!-- Channel Header -->
-                <div class="bg-primary text-white px-6 py-3 flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-2xl font-bold">{{ channel_data.channel_number }}</span>
-                        <div>
-                            <h2 class="text-lg font-semibold">{{ channel_data.channel_name }}</h2>
-                            {% if channel_data.callsign %}
-                            <p class="text-sm text-gray-300">{{ channel_data.callsign }}</p>
+    {% if programs %}
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="divide-y divide-gray-200">
+                {% for program in programs %}
+                <div class="p-4 hover:bg-gray-50 transition-colors" data-schedule-id="{{ program.schedule_id }}">
+                    <div class="flex items-start justify-between">
+                        <!-- Program Info -->
+                        <div class="flex-1 mr-4">
+                            <div class="flex items-baseline space-x-3 mb-2">
+                                <!-- Air Time (will be converted to local time by JavaScript) -->
+                                <span class="text-lg font-semibold text-gray-900 air-time" data-utc-time="{{ program.air_datetime_utc }}">
+                                    Loading...
+                                </span>
+
+                                <!-- Duration Badge -->
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700">
+                                    {{ program.duration_minutes }} min
+                                </span>
+
+                                <!-- New Episode Badge (if applicable) -->
+                                {% if program.is_new %}
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                                    NEW
+                                </span>
+                                {% endif %}
+
+                                <!-- Live Badge (if applicable) -->
+                                {% if program.is_live %}
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+                                    LIVE
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Program Title -->
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">
+                                {{ program.title }}
+                            </h3>
+
+                            <!-- Episode Info (if available) -->
+                            {% if program.episode_title %}
+                            <p class="text-sm font-medium text-gray-700 mb-1">
+                                {% if program.season_number and program.episode_number %}
+                                S{{ "%02d"|format(program.season_number) }}E{{ "%02d"|format(program.episode_number) }} -
+                                {% endif %}
+                                {{ program.episode_title }}
+                            </p>
+                            {% endif %}
+
+                            <!-- Description -->
+                            {% if program.description %}
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                {{ program.description }}
+                            </p>
+                            {% endif %}
+
+                            <!-- Additional Metadata -->
+                            <div class="flex flex-wrap gap-2 mt-2 text-xs text-gray-500">
+                                {% if program.original_air_date %}
+                                <span>Originally aired: {{ program.original_air_date }}</span>
+                                {% endif %}
+                                {% if program.genres %}
+                                <span>{{ program.genres|join(', ') }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Record Button -->
+                        <div class="flex-shrink-0">
+                            {% if program.is_scheduled %}
+                            <button
+                                disabled
+                                class="bg-gray-400 text-white px-4 py-2 rounded-md cursor-not-allowed font-medium text-sm flex items-center space-x-2"
+                                data-schedule-id="{{ program.schedule_id }}"
+                                aria-label="Recording scheduled for {{ program.title }}">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span>Scheduled</span>
+                            </button>
+                            {% else %}
+                            <button
+                                onclick="recordProgram('{{ program.schedule_id }}', '{{ program.title|replace("'", "\\'") }}')"
+                                class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium text-sm transition-colors flex items-center space-x-2"
+                                data-schedule-id="{{ program.schedule_id }}"
+                                aria-label="Record {{ program.title }}">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="10" cy="10" r="8"/>
+                                </svg>
+                                <span>Record</span>
+                            </button>
                             {% endif %}
                         </div>
                     </div>
-                    <span class="text-sm text-gray-300">{{ channel_data.programs|length }} program(s)</span>
                 </div>
-
-                <!-- Programs List -->
-                <div class="divide-y divide-gray-200">
-                    {% for program in channel_data.programs %}
-                    <div class="p-4 hover:bg-gray-50 transition-colors" data-schedule-id="{{ program.schedule_id }}">
-                        <div class="flex items-start justify-between">
-                            <!-- Program Info -->
-                            <div class="flex-1 mr-4">
-                                <div class="flex items-baseline space-x-3 mb-2">
-                                    <!-- Air Time (will be converted to local time by JavaScript) -->
-                                    <span class="text-lg font-semibold text-gray-900 air-time" data-utc-time="{{ program.air_datetime_utc }}">
-                                        Loading...
-                                    </span>
-
-                                    <!-- Duration Badge -->
-                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700">
-                                        {{ program.duration_minutes }} min
-                                    </span>
-
-                                    <!-- New Episode Badge (if applicable) -->
-                                    {% if program.is_new %}
-                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
-                                        NEW
-                                    </span>
-                                    {% endif %}
-
-                                    <!-- Live Badge (if applicable) -->
-                                    {% if program.is_live %}
-                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
-                                        LIVE
-                                    </span>
-                                    {% endif %}
-                                </div>
-
-                                <!-- Program Title -->
-                                <h3 class="text-xl font-bold text-gray-900 mb-2">
-                                    {{ program.title }}
-                                </h3>
-
-                                <!-- Episode Info (if available) -->
-                                {% if program.episode_title %}
-                                <p class="text-sm font-medium text-gray-700 mb-1">
-                                    {% if program.season_number and program.episode_number %}
-                                    S{{ "%02d"|format(program.season_number) }}E{{ "%02d"|format(program.episode_number) }} -
-                                    {% endif %}
-                                    {{ program.episode_title }}
-                                </p>
-                                {% endif %}
-
-                                <!-- Description -->
-                                {% if program.description %}
-                                <p class="text-sm text-gray-600 leading-relaxed">
-                                    {{ program.description }}
-                                </p>
-                                {% endif %}
-
-                                <!-- Additional Metadata -->
-                                <div class="flex flex-wrap gap-2 mt-2 text-xs text-gray-500">
-                                    {% if program.original_air_date %}
-                                    <span>Originally aired: {{ program.original_air_date }}</span>
-                                    {% endif %}
-                                    {% if program.genres %}
-                                    <span>{{ program.genres|join(', ') }}</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Record Button -->
-                            <div class="flex-shrink-0">
-                                <button
-                                    onclick="recordProgram('{{ program.schedule_id }}', '{{ program.title|replace("'", "\\'") }}')"
-                                    class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium text-sm transition-colors flex items-center space-x-2"
-                                    data-schedule-id="{{ program.schedule_id }}"
-                                    aria-label="Record {{ program.title }}">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                        <circle cx="10" cy="10" r="8"/>
-                                    </svg>
-                                    <span>Record</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
-    {% else %}
-        <!-- Empty State -->
+    {% elif selected_station_id and selected_date %}
+        <!-- Empty State - No programs found -->
         <div class="bg-white rounded-lg shadow-md p-12 text-center">
             <div class="text-6xl mb-4">📺</div>
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">No Guide Data Available</h2>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">No Programs Found</h2>
             <p class="text-gray-600 mb-6">
-                No programs are currently available for display.
+                No programs are scheduled for the selected channel and date.
             </p>
             <div class="space-y-2 text-sm text-gray-500">
-                <p>This could mean:</p>
-                <ul class="list-disc list-inside space-y-1">
-                    <li>No lineups have been configured yet</li>
-                    <li>Guide data hasn't been synced from Schedules Direct</li>
-                    <li>All scheduled programs are more than 12 hours away</li>
-                </ul>
+                <p>Try selecting a different channel or date.</p>
             </div>
-            <div class="mt-8">
-                <a href="/lineups" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium">
-                    Configure Lineups
-                </a>
-            </div>
+        </div>
+    {% else %}
+        <!-- Empty State - No selection -->
+        <div class="bg-white rounded-lg shadow-md p-12 text-center">
+            <div class="text-6xl mb-4">📺</div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Select a Channel and Date</h2>
+            <p class="text-gray-600 mb-6">
+                Please select a channel and date above to view the program guide.
+            </p>
         </div>
     {% endif %}
 
@@ -291,76 +280,39 @@
         }
     });
 
-    // Time range selector function
-    function changeTimeRange(hours) {
-        // Reload the page with the new time range parameter
-        const url = new URL(window.location.href);
-        url.searchParams.set('hours', hours);
-        window.location.href = url.toString();
-    }
+    // Update guide when channel or date changes
+    function updateGuide() {
+        const channelSelect = document.getElementById('channel-select');
+        const dateSelect = document.getElementById('date-select');
 
-    // Search/filter functions
-    function filterPrograms(searchTerm) {
-        const normalizedSearch = searchTerm.toLowerCase().trim();
-        const channelSections = document.querySelectorAll('.bg-white.rounded-lg.shadow-md.overflow-hidden');
-        const searchResults = document.getElementById('search-results');
+        const stationId = channelSelect.value;
+        const date = dateSelect.value;
 
-        let visiblePrograms = 0;
-        let totalPrograms = 0;
-        let visibleChannels = 0;
+        // Only navigate if both values are selected
+        if (stationId && date) {
+            // Get timezone offset in minutes
+            // getTimezoneOffset() returns positive for west of UTC, negative for east
+            const tzOffset = new Date().getTimezoneOffset();
 
-        channelSections.forEach(section => {
-            const programs = section.querySelectorAll('[data-schedule-id]');
-            let channelHasVisiblePrograms = false;
-
-            programs.forEach(program => {
-                totalPrograms++;
-                const title = program.querySelector('h3').textContent.toLowerCase();
-                const description = program.querySelector('.text-sm.text-gray-600')?.textContent.toLowerCase() || '';
-
-                // Check if search term matches title or description
-                const matches = normalizedSearch === '' ||
-                               title.includes(normalizedSearch) ||
-                               description.includes(normalizedSearch);
-
-                if (matches) {
-                    program.style.display = '';
-                    visiblePrograms++;
-                    channelHasVisiblePrograms = true;
-                } else {
-                    program.style.display = 'none';
-                }
-            });
-
-            // Hide channel section if no programs match
-            if (channelHasVisiblePrograms) {
-                section.style.display = '';
-                visibleChannels++;
-            } else {
-                section.style.display = 'none';
-            }
-        });
-
-        // Update search results text
-        if (normalizedSearch) {
-            if (visiblePrograms === 0) {
-                searchResults.textContent = `No programs found matching "${searchTerm}"`;
-                searchResults.className = 'text-sm text-red-600 mt-2';
-            } else {
-                searchResults.textContent = `Showing ${visiblePrograms} of ${totalPrograms} programs across ${visibleChannels} channels`;
-                searchResults.className = 'text-sm text-gray-600 mt-2';
-            }
-        } else {
-            searchResults.textContent = '';
+            const url = new URL(window.location.href);
+            url.searchParams.set('station_id', stationId);
+            url.searchParams.set('date', date);
+            url.searchParams.set('tz_offset', tzOffset);
+            window.location.href = url.toString();
         }
     }
 
-    function clearSearch() {
-        const searchInput = document.getElementById('search-input');
-        searchInput.value = '';
-        filterPrograms('');
-        searchInput.focus();
-    }
+    // Set minimum date to today
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.getElementById('date-select');
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.min = today;
+
+        // Set default date to today if not set
+        if (!dateInput.value) {
+            dateInput.value = today;
+        }
+    });
 
     // Toast notification functions
     function showToast(message, type = 'success') {
@@ -414,6 +366,13 @@
             return;
         }
 
+        // Check if button is already disabled (scheduled)
+        const button = document.querySelector(`button[data-schedule-id="${scheduleId}"]`);
+        if (button && button.disabled) {
+            showToast('This program is already scheduled for recording', 'info');
+            return;
+        }
+
         // Show loading state
         showLoading();
 
@@ -445,11 +404,11 @@
             showToast(`Successfully scheduled recording for "${programTitle}"`, 'success');
 
             // Update button state to show it's been scheduled
-            const button = document.querySelector(`button[data-schedule-id="${scheduleId}"]`);
             if (button) {
                 button.disabled = true;
-                button.classList.remove('bg-red-600', 'hover:bg-red-700');
+                button.classList.remove('bg-red-600', 'hover:bg-red-700', 'focus:ring-2', 'focus:ring-red-500');
                 button.classList.add('bg-gray-400', 'cursor-not-allowed');
+                button.removeAttribute('onclick');
                 button.innerHTML = `
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>

@@ -15,7 +15,8 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.models import Schedule, Program, Station
+from app.models import Schedule, Program, Station, Recording
+from app.models.recording import RecordingStatus
 
 logger = logging.getLogger(__name__)
 
@@ -31,40 +32,108 @@ router = APIRouter()
 async def guide_page(
     request: Request,
     db: Session = Depends(get_db),
-    hours: int = Query(default=12, ge=1, le=168, description="Number of hours to display")
+    station_id: str = Query(default=None, description="Station ID to display"),
+    date: str = Query(default=None, description="Date to display (YYYY-MM-DD)"),
+    tz_offset: int = Query(default=0, description="Timezone offset in minutes from UTC")
 ) -> HTMLResponse:
     """
     Render the TV program guide page.
 
-    This page displays upcoming programs for the specified time range, grouped by
-    channel. Users can browse the guide and schedule recordings.
+    This page displays upcoming programs for a specific channel and date.
+    Users can select a channel from a dropdown and pick a date to view programs.
 
     The page shows:
-    - Programs organized by channel (sorted by channel number)
+    - Channel selector dropdown (with affiliate name and channel number)
+    - Date picker for selecting which day to view
+    - Programs for the selected channel and date
     - Air time, title, and description for each program
     - Duration and status badges (NEW, LIVE)
     - "Record" button for each program
-    - Time range selector (3, 6, 12, 24, 48 hours)
-    - Search bar to filter programs by title
 
     Args:
         request: FastAPI Request object for template context
         db: Database session from dependency injection
-        hours: Number of hours to display (default: 12, min: 1, max: 168/1 week)
+        station_id: Station ID to display programs for
+        date: Date to display programs for (YYYY-MM-DD format)
 
     Returns:
-        HTMLResponse: Rendered guide.html template with programs_by_channel data
+        HTMLResponse: Rendered guide.html template with programs and stations list
     """
     from app.main import templates
 
     try:
-        # Get current time and time window based on hours parameter
-        now = datetime.utcnow()
-        end_time = now + timedelta(hours=hours)
+        # Get today's date for the date picker
+        today = datetime.utcnow().date().isoformat()
 
-        logger.info(f"Fetching guide data from {now} to {end_time} ({hours} hours)")
+        # Get all enabled stations for the dropdown
+        stations = (
+            db.query(Station)
+            .filter(Station.enabled == True)
+            .order_by(Station.channel_number)
+            .all()
+        )
 
-        # Query schedules with joined program and station data
+        # Format stations for dropdown
+        stations_list = _format_stations_for_dropdown(stations)
+
+        # If no station or date selected, show empty state with selection UI
+        if not station_id or not date:
+            return templates.TemplateResponse(
+                "guide.html",
+                {
+                    "request": request,
+                    "stations": stations_list,
+                    "selected_station_id": station_id,
+                    "selected_date": date,
+                    "today_date": today,
+                    "programs": [],
+                }
+            )
+
+        # Parse the date
+        try:
+            selected_date = datetime.strptime(date, "%Y-%m-%d")
+        except ValueError:
+            logger.error(f"Invalid date format: {date}")
+            return templates.TemplateResponse(
+                "guide.html",
+                {
+                    "request": request,
+                    "stations": stations_list,
+                    "selected_station_id": station_id,
+                    "selected_date": None,
+                    "today_date": today,
+                    "programs": [],
+                    "error": "Invalid date format. Please use YYYY-MM-DD.",
+                }
+            )
+
+        # Calculate start and end times for the selected date in UTC
+        # The date comes from the user's browser as a local date (e.g., "2025-11-06")
+        # tz_offset is in minutes from UTC
+        # JavaScript's getTimezoneOffset() returns:
+        #   - Positive values for west of UTC (e.g., 480 for PST/UTC-8, 300 for EST/UTC-5)
+        #   - Negative values for east of UTC (e.g., -60 for CET/UTC+1, -540 for JST/UTC+9)
+
+        # We want to show programs that START during the selected calendar day in the user's local timezone
+        # Formula: UTC time = Local time + offset (because offset represents how far behind UTC we are)
+
+        # Example: User in PST (UTC-8) selects Nov 6
+        # - tz_offset = 480 minutes (8 hours)
+        # - Local: Nov 6 00:00 to Nov 7 00:00
+        # - UTC: Nov 6 08:00 to Nov 7 08:00
+
+        # Create the local date range (midnight to midnight)
+        local_start = selected_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        local_end = local_start + timedelta(days=1)
+
+        # Convert to UTC
+        start_time_utc = local_start + timedelta(minutes=tz_offset)
+        end_time_utc = local_end + timedelta(minutes=tz_offset)
+
+        logger.info(f"Fetching guide data for station {station_id} on {date}")
+
+        # Query schedules for the selected station and date
         schedules = (
             db.query(Schedule)
             .options(
@@ -73,26 +142,43 @@ async def guide_page(
             )
             .filter(
                 and_(
-                    Schedule.air_datetime >= now,
-                    Schedule.air_datetime < end_time,
-                    Schedule.station.has(Station.enabled == True)
+                    Schedule.station_id == station_id,
+                    Schedule.air_datetime >= start_time_utc,
+                    Schedule.air_datetime < end_time_utc
                 )
             )
-            .order_by(Schedule.station_id, Schedule.air_datetime)
+            .order_by(Schedule.air_datetime)
             .all()
         )
 
-        logger.info(f"Found {len(schedules)} programs in the next {hours} hours")
+        logger.info(f"Found {len(schedules)} programs for station {station_id} on {date}")
 
-        # Group programs by channel
-        programs_by_channel = _group_programs_by_channel(schedules)
+        # Get all scheduled/in-progress recordings for these schedules to check status
+        schedule_ids = [s.id for s in schedules]
+        active_recordings = (
+            db.query(Recording.schedule_id)
+            .filter(
+                and_(
+                    Recording.schedule_id.in_(schedule_ids),
+                    Recording.status.in_([RecordingStatus.SCHEDULED, RecordingStatus.IN_PROGRESS])
+                )
+            )
+            .all()
+        )
+        scheduled_schedule_ids = {r.schedule_id for r in active_recordings}
+
+        # Format programs for display
+        programs = _format_programs_for_display(schedules, scheduled_schedule_ids)
 
         return templates.TemplateResponse(
             "guide.html",
             {
                 "request": request,
-                "programs_by_channel": programs_by_channel,
-                "hours": hours,
+                "stations": stations_list,
+                "selected_station_id": station_id,
+                "selected_date": date,
+                "today_date": today,
+                "programs": programs,
             }
         )
     except Exception as e:
@@ -101,7 +187,11 @@ async def guide_page(
             "guide.html",
             {
                 "request": request,
-                "programs_by_channel": [],
+                "stations": stations_list if 'stations_list' in locals() else [],
+                "selected_station_id": station_id,
+                "selected_date": date,
+                "today_date": today if 'today' in locals() else datetime.utcnow().date().isoformat(),
+                "programs": [],
                 "error": "Failed to load guide data. Please try again later.",
             }
         )
@@ -111,34 +201,59 @@ async def guide_page(
 # Helper Functions
 # ============================================================================
 
-def _group_programs_by_channel(schedules: List[Schedule]) -> List[Dict[str, Any]]:
+def _format_stations_for_dropdown(stations: List[Station]) -> List[Dict[str, Any]]:
     """
-    Group schedules by channel and format for template display.
+    Format stations for dropdown display.
+
+    Args:
+        stations: List of Station objects
+
+    Returns:
+        List of station dictionaries with formatted display text
+    """
+    stations_list = []
+
+    for station in stations:
+        # Format display text: "Channel 2.1 - NBC (KNTV)"
+        display_parts = [f"Channel {station.channel_number}"]
+
+        if station.affiliate:
+            display_parts.append(station.affiliate)
+
+        if station.callsign:
+            display_parts.append(f"({station.callsign})")
+
+        display_text = " - ".join(display_parts)
+
+        stations_list.append({
+            "id": station.id,
+            "channel_number": station.channel_number,
+            "name": station.name,
+            "callsign": station.callsign,
+            "affiliate": station.affiliate,
+            "display_text": display_text
+        })
+
+    return stations_list
+
+
+def _format_programs_for_display(schedules: List[Schedule], scheduled_schedule_ids: set = None) -> List[Dict[str, Any]]:
+    """
+    Format schedules for template display.
 
     Args:
         schedules: List of Schedule objects with joined program and station data
+        scheduled_schedule_ids: Set of schedule IDs that already have active recordings
 
     Returns:
-        List of channel dictionaries, each containing:
-        - channel_number: Channel number (e.g., "2.1")
-        - channel_name: Station name
-        - callsign: Station callsign
-        - programs: List of program dictionaries
+        List of program dictionaries for display
     """
-    channels_dict: Dict[str, Dict[str, Any]] = {}
+    programs = []
+    if scheduled_schedule_ids is None:
+        scheduled_schedule_ids = set()
 
     for schedule in schedules:
-        station = schedule.station
         program = schedule.program
-
-        # Get or create channel entry
-        if station.id not in channels_dict:
-            channels_dict[station.id] = {
-                "channel_number": station.channel_number,
-                "channel_name": station.name,
-                "callsign": station.callsign,
-                "programs": []
-            }
 
         # Calculate duration in minutes
         duration_minutes = schedule.duration_seconds // 60
@@ -149,8 +264,11 @@ def _group_programs_by_channel(schedules: List[Schedule]) -> List[Dict[str, Any]
         if not air_datetime_str.endswith('Z') and '+' not in air_datetime_str:
             air_datetime_str += 'Z'
 
-        # Add program to channel
-        channels_dict[station.id]["programs"].append({
+        # Check if this program is already scheduled for recording
+        is_scheduled = schedule.id in scheduled_schedule_ids
+
+        # Add program to list
+        programs.append({
             "schedule_id": schedule.id,
             "air_datetime_utc": air_datetime_str,  # ISO format with Z for JavaScript
             "duration_minutes": duration_minutes,
@@ -163,23 +281,7 @@ def _group_programs_by_channel(schedules: List[Schedule]) -> List[Dict[str, Any]
             "is_live": False,
             "original_air_date": None,
             "genres": [],  # MVP: No genre data yet
+            "is_scheduled": is_scheduled,
         })
 
-    # Convert to list and sort by channel number
-    channels_list = list(channels_dict.values())
-
-    # Sort channels by channel number (handle subchannels like "2.1")
-    def _channel_sort_key(channel: Dict[str, Any]) -> tuple:
-        """Extract major and minor channel numbers for sorting."""
-        try:
-            parts = channel["channel_number"].split(".")
-            major = int(parts[0])
-            minor = int(parts[1]) if len(parts) > 1 else 0
-            return (major, minor)
-        except (ValueError, IndexError):
-            # If parsing fails, sort to end
-            return (999999, 999999)
-
-    channels_list.sort(key=_channel_sort_key)
-
-    return channels_list
+    return programs
