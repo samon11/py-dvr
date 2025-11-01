@@ -18,12 +18,16 @@ from fastapi.templating import Jinja2Templates
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import get_settings
+from app.services.recorder import RecordingScheduler
 
 # Initialize settings
 settings = get_settings()
 
-# Initialize background scheduler
+# Initialize background scheduler for periodic jobs (like guide sync)
 scheduler = AsyncIOScheduler()
+
+# Initialize recording scheduler
+recording_scheduler = RecordingScheduler()
 
 
 async def sync_guide_data_job():
@@ -56,18 +60,22 @@ async def lifespan(app: FastAPI):
 
     Startup:
     - Initializes background scheduler with daily guide sync at 4 AM
+    - Starts recording scheduler for monitoring and executing recordings
     - Displays application configuration
 
     Shutdown:
     - Gracefully shuts down background scheduler
+    - Stops recording scheduler
     - Performs cleanup tasks
     """
+    from app.database import SessionLocal
+
     # Startup
     print(f"PyHDHRDVR starting on {settings.host}:{settings.port}")
     print(f"HDHomeRun device: {settings.hdhomerun_ip}")
     print(f"Recording path: {settings.recording_path}")
 
-    # Start background scheduler
+    # Start background scheduler for periodic jobs
     # Daily sync at 4 AM
     scheduler.add_job(
         sync_guide_data_job,
@@ -79,12 +87,24 @@ async def lifespan(app: FastAPI):
     scheduler.start()
     print("Background scheduler started - daily guide sync at 4 AM")
 
+    # Start recording scheduler
+    # This runs continuously, checking for upcoming recordings every 10 seconds
+    import asyncio
+    recording_task = asyncio.create_task(
+        recording_scheduler.start(db_session_factory=SessionLocal)
+    )
+    print("Recording scheduler started - monitoring for upcoming recordings")
+
     yield
 
     # Shutdown
     print("PyHDHRDVR shutting down...")
 
-    # Shutdown scheduler
+    # Shutdown recording scheduler
+    await recording_scheduler.stop()
+    print("Recording scheduler stopped")
+
+    # Shutdown periodic scheduler
     if scheduler.running:
         scheduler.shutdown()
         print("Background scheduler stopped")
