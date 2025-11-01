@@ -186,40 +186,42 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
 
 ## Phase 3: Recording Engine (Days 5-6)
 
-### [P0] Task 3.1: Recording Scheduler Service
+### [P0] Task 3.1: Recording Scheduler Service ✅
 **Estimate:** 4 hours
+**Status:** COMPLETED
 
-- [ ] Create `app/services/recorder.py`
-- [ ] Implement scheduler loop:
+- [x] Create `app/services/recorder.py`
+- [x] Implement scheduler loop:
   - Check database every 10 seconds for upcoming recordings
   - Start recording at scheduled time minus padding
-- [ ] Implement recording state machine:
+- [x] Implement recording state machine:
   - scheduled → in_progress → completed/failed
-- [ ] Update recording status in database
-- [ ] Calculate actual recording time with padding
-- [ ] Handle basic errors (no tuner available, stream error)
+- [x] Update recording status in database
+- [x] Calculate actual recording time with padding
+- [x] Handle basic errors (no tuner available, stream error)
 
-**Deliverable:** Background service that executes recordings
+**Deliverable:** Background service that executes recordings ✅
 
 ---
 
-### [P0] Task 3.2: Recording Execution Logic
+### [P0] Task 3.2: Recording Execution Logic ✅
 **Estimate:** 3 hours
+**Status:** COMPLETED
 
-- [ ] Create filename from program data:
+- [x] Create filename from program data:
   - Format: `{title} ({date}).ts`
   - Sanitize invalid characters
-- [ ] Create recording directory if needed
-- [ ] Implement recording workflow:
+- [x] Create recording directory if needed
+- [x] Implement recording workflow:
   1. Find available tuner
   3. Capture stream to file
   4. Monitor for errors
   5. Stop at end time + padding
   6. Release tuner
   7. Update recording status
-- [ ] Validate file exists and has reasonable size
+- [x] Validate file exists and has reasonable size
 
-**Deliverable:** Complete recording execution pipeline
+**Deliverable:** Complete recording execution pipeline ✅
 
 ---
 
