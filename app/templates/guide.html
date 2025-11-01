@@ -1,0 +1,494 @@
+{% extends "base.html" %}
+
+{% block title %}TV Guide - PyHDHRDVR{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">TV Guide</h1>
+                <p class="text-gray-600 mt-2">Browse upcoming programs</p>
+            </div>
+
+            <!-- Time Range Selector -->
+            <div class="flex items-center space-x-3">
+                <label for="time-range" class="text-sm font-medium text-gray-700">Time Range:</label>
+                <select
+                    id="time-range"
+                    onchange="changeTimeRange(this.value)"
+                    class="block w-48 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border">
+                    <option value="3" {% if hours == 3 %}selected{% endif %}>Next 3 hours</option>
+                    <option value="6" {% if hours == 6 %}selected{% endif %}>Next 6 hours</option>
+                    <option value="12" {% if hours == 12 or not hours %}selected{% endif %}>Next 12 hours</option>
+                    <option value="24" {% if hours == 24 %}selected{% endif %}>Next 24 hours</option>
+                    <option value="48" {% if hours == 48 %}selected{% endif %}>Next 48 hours</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="mt-4">
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <input
+                    type="text"
+                    id="search-input"
+                    placeholder="Search programs by title..."
+                    onkeyup="filterPrograms(this.value)"
+                    class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                {% if search_query %}
+                <button
+                    onclick="clearSearch()"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+                {% endif %}
+            </div>
+            <p id="search-results" class="text-sm text-gray-500 mt-2"></p>
+        </div>
+    </div>
+
+    <!-- Toast Notification (hidden by default) -->
+    <div id="toast" class="fixed top-20 right-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg border-l-4 p-4 max-w-md">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <span id="toast-icon"></span>
+                </div>
+                <div class="ml-3 flex-1">
+                    <p id="toast-message" class="text-sm font-medium text-gray-900"></p>
+                </div>
+                <button onclick="hideToast()" class="ml-3 flex-shrink-0 text-gray-400 hover:text-gray-600">
+                    <span class="text-xl">&times;</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guide Content -->
+    {% if programs_by_channel %}
+        <div class="space-y-4">
+            {% for channel_data in programs_by_channel %}
+            <!-- Channel Section -->
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <!-- Channel Header -->
+                <div class="bg-primary text-white px-6 py-3 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-2xl font-bold">{{ channel_data.channel_number }}</span>
+                        <div>
+                            <h2 class="text-lg font-semibold">{{ channel_data.channel_name }}</h2>
+                            {% if channel_data.callsign %}
+                            <p class="text-sm text-gray-300">{{ channel_data.callsign }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <span class="text-sm text-gray-300">{{ channel_data.programs|length }} program(s)</span>
+                </div>
+
+                <!-- Programs List -->
+                <div class="divide-y divide-gray-200">
+                    {% for program in channel_data.programs %}
+                    <div class="p-4 hover:bg-gray-50 transition-colors" data-schedule-id="{{ program.schedule_id }}">
+                        <div class="flex items-start justify-between">
+                            <!-- Program Info -->
+                            <div class="flex-1 mr-4">
+                                <div class="flex items-baseline space-x-3 mb-2">
+                                    <!-- Air Time (will be converted to local time by JavaScript) -->
+                                    <span class="text-lg font-semibold text-gray-900 air-time" data-utc-time="{{ program.air_datetime_utc }}">
+                                        Loading...
+                                    </span>
+
+                                    <!-- Duration Badge -->
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700">
+                                        {{ program.duration_minutes }} min
+                                    </span>
+
+                                    <!-- New Episode Badge (if applicable) -->
+                                    {% if program.is_new %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        NEW
+                                    </span>
+                                    {% endif %}
+
+                                    <!-- Live Badge (if applicable) -->
+                                    {% if program.is_live %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+                                        LIVE
+                                    </span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Program Title -->
+                                <h3 class="text-xl font-bold text-gray-900 mb-2">
+                                    {{ program.title }}
+                                </h3>
+
+                                <!-- Episode Info (if available) -->
+                                {% if program.episode_title %}
+                                <p class="text-sm font-medium text-gray-700 mb-1">
+                                    {% if program.season_number and program.episode_number %}
+                                    S{{ "%02d"|format(program.season_number) }}E{{ "%02d"|format(program.episode_number) }} -
+                                    {% endif %}
+                                    {{ program.episode_title }}
+                                </p>
+                                {% endif %}
+
+                                <!-- Description -->
+                                {% if program.description %}
+                                <p class="text-sm text-gray-600 leading-relaxed">
+                                    {{ program.description }}
+                                </p>
+                                {% endif %}
+
+                                <!-- Additional Metadata -->
+                                <div class="flex flex-wrap gap-2 mt-2 text-xs text-gray-500">
+                                    {% if program.original_air_date %}
+                                    <span>Originally aired: {{ program.original_air_date }}</span>
+                                    {% endif %}
+                                    {% if program.genres %}
+                                    <span>{{ program.genres|join(', ') }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Record Button -->
+                            <div class="flex-shrink-0">
+                                <button
+                                    onclick="recordProgram('{{ program.schedule_id }}', '{{ program.title|replace("'", "\\'") }}')"
+                                    class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium text-sm transition-colors flex items-center space-x-2"
+                                    data-schedule-id="{{ program.schedule_id }}"
+                                    aria-label="Record {{ program.title }}">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="10" cy="10" r="8"/>
+                                    </svg>
+                                    <span>Record</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Empty State -->
+        <div class="bg-white rounded-lg shadow-md p-12 text-center">
+            <div class="text-6xl mb-4">📺</div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">No Guide Data Available</h2>
+            <p class="text-gray-600 mb-6">
+                No programs are currently available for display.
+            </p>
+            <div class="space-y-2 text-sm text-gray-500">
+                <p>This could mean:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>No lineups have been configured yet</li>
+                    <li>Guide data hasn't been synced from Schedules Direct</li>
+                    <li>All scheduled programs are more than 12 hours away</li>
+                </ul>
+            </div>
+            <div class="mt-8">
+                <a href="/lineups" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium">
+                    Configure Lineups
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Loading Spinner (hidden by default) -->
+    <div id="loading-spinner" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-lg font-medium text-gray-900">Recording...</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Convert all UTC times to browser local time on page load
+    function convertUTCTimesToLocal() {
+        const timeElements = document.querySelectorAll('.air-time');
+
+        timeElements.forEach(element => {
+            const utcTimeString = element.getAttribute('data-utc-time');
+            if (!utcTimeString) return;
+
+            try {
+                // Parse the UTC datetime
+                const utcDate = new Date(utcTimeString);
+
+                // Format date and time in local timezone
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+
+                const isToday = utcDate.toDateString() === today.toDateString();
+                const isTomorrow = utcDate.toDateString() === tomorrow.toDateString();
+
+                // Format time (e.g., "7:00 PM")
+                const timeString = utcDate.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+
+                // Format date prefix
+                let datePrefix;
+                if (isToday) {
+                    datePrefix = 'Today';
+                } else if (isTomorrow) {
+                    datePrefix = 'Tomorrow';
+                } else {
+                    // Show day of week and date (e.g., "Wed 11/6")
+                    datePrefix = utcDate.toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'numeric',
+                        day: 'numeric'
+                    });
+                }
+
+                // Combine date and time
+                element.textContent = `${datePrefix} ${timeString}`;
+
+                // Store the date object for sorting if needed
+                element.dataset.localDate = utcDate.toISOString();
+            } catch (error) {
+                console.error('Error converting time:', error);
+                element.textContent = 'Invalid time';
+            }
+        });
+    }
+
+    // Run conversion when page loads
+    // Use both DOMContentLoaded and load to ensure it runs
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', convertUTCTimesToLocal);
+    } else {
+        // DOM is already loaded, run immediately
+        convertUTCTimesToLocal();
+    }
+
+    // Also run on window.load as a fallback
+    window.addEventListener('load', function() {
+        // Check if times still show "Loading..." and convert again if needed
+        const loadingElements = document.querySelectorAll('.air-time');
+        const needsConversion = Array.from(loadingElements).some(el => el.textContent === 'Loading...');
+        if (needsConversion) {
+            convertUTCTimesToLocal();
+        }
+    });
+
+    // Time range selector function
+    function changeTimeRange(hours) {
+        // Reload the page with the new time range parameter
+        const url = new URL(window.location.href);
+        url.searchParams.set('hours', hours);
+        window.location.href = url.toString();
+    }
+
+    // Search/filter functions
+    function filterPrograms(searchTerm) {
+        const normalizedSearch = searchTerm.toLowerCase().trim();
+        const channelSections = document.querySelectorAll('.bg-white.rounded-lg.shadow-md.overflow-hidden');
+        const searchResults = document.getElementById('search-results');
+
+        let visiblePrograms = 0;
+        let totalPrograms = 0;
+        let visibleChannels = 0;
+
+        channelSections.forEach(section => {
+            const programs = section.querySelectorAll('[data-schedule-id]');
+            let channelHasVisiblePrograms = false;
+
+            programs.forEach(program => {
+                totalPrograms++;
+                const title = program.querySelector('h3').textContent.toLowerCase();
+                const description = program.querySelector('.text-sm.text-gray-600')?.textContent.toLowerCase() || '';
+
+                // Check if search term matches title or description
+                const matches = normalizedSearch === '' ||
+                               title.includes(normalizedSearch) ||
+                               description.includes(normalizedSearch);
+
+                if (matches) {
+                    program.style.display = '';
+                    visiblePrograms++;
+                    channelHasVisiblePrograms = true;
+                } else {
+                    program.style.display = 'none';
+                }
+            });
+
+            // Hide channel section if no programs match
+            if (channelHasVisiblePrograms) {
+                section.style.display = '';
+                visibleChannels++;
+            } else {
+                section.style.display = 'none';
+            }
+        });
+
+        // Update search results text
+        if (normalizedSearch) {
+            if (visiblePrograms === 0) {
+                searchResults.textContent = `No programs found matching "${searchTerm}"`;
+                searchResults.className = 'text-sm text-red-600 mt-2';
+            } else {
+                searchResults.textContent = `Showing ${visiblePrograms} of ${totalPrograms} programs across ${visibleChannels} channels`;
+                searchResults.className = 'text-sm text-gray-600 mt-2';
+            }
+        } else {
+            searchResults.textContent = '';
+        }
+    }
+
+    function clearSearch() {
+        const searchInput = document.getElementById('search-input');
+        searchInput.value = '';
+        filterPrograms('');
+        searchInput.focus();
+    }
+
+    // Toast notification functions
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        const toastIcon = document.getElementById('toast-icon');
+        const toastMessage = document.getElementById('toast-message');
+        const toastContainer = toast.querySelector('div');
+
+        // Set icon and color based on type
+        if (type === 'success') {
+            toastIcon.textContent = '✓';
+            toastIcon.className = 'text-2xl text-green-600';
+            toastContainer.className = 'bg-white rounded-lg shadow-lg border-l-4 border-green-500 p-4 max-w-md';
+        } else if (type === 'error') {
+            toastIcon.textContent = '✕';
+            toastIcon.className = 'text-2xl text-red-600';
+            toastContainer.className = 'bg-white rounded-lg shadow-lg border-l-4 border-red-500 p-4 max-w-md';
+        } else if (type === 'info') {
+            toastIcon.textContent = 'ℹ';
+            toastIcon.className = 'text-2xl text-blue-600';
+            toastContainer.className = 'bg-white rounded-lg shadow-lg border-l-4 border-blue-500 p-4 max-w-md';
+        }
+
+        toastMessage.textContent = message;
+        toast.classList.remove('hidden');
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            hideToast();
+        }, 5000);
+    }
+
+    function hideToast() {
+        document.getElementById('toast').classList.add('hidden');
+    }
+
+    // Show/hide loading spinner
+    function showLoading() {
+        document.getElementById('loading-spinner').classList.remove('hidden');
+    }
+
+    function hideLoading() {
+        document.getElementById('loading-spinner').classList.add('hidden');
+    }
+
+    // Record program function
+    async function recordProgram(scheduleId, programTitle) {
+        // Validate schedule ID
+        if (!scheduleId) {
+            showToast('Invalid program schedule ID', 'error');
+            return;
+        }
+
+        // Show loading state
+        showLoading();
+
+        try {
+            // TODO (Task 4.2): Replace with actual API endpoint when implemented
+            // For now, this is a placeholder structure
+            const response = await fetch(`/api/recordings`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    schedule_id: scheduleId,
+                    // Additional fields can be added here when the API is implemented
+                    // padding_start: 60,
+                    // padding_end: 120,
+                }),
+            });
+
+            const data = await response.json();
+
+            hideLoading();
+
+            if (!response.ok) {
+                // Handle HTTP errors
+                throw new Error(data.detail || 'Failed to schedule recording');
+            }
+
+            // Show success message
+            showToast(`Successfully scheduled recording for "${programTitle}"`, 'success');
+
+            // Update button state to show it's been scheduled
+            const button = document.querySelector(`button[data-schedule-id="${scheduleId}"]`);
+            if (button) {
+                button.disabled = true;
+                button.classList.remove('bg-red-600', 'hover:bg-red-700');
+                button.classList.add('bg-gray-400', 'cursor-not-allowed');
+                button.innerHTML = `
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Scheduled</span>
+                `;
+            }
+
+        } catch (error) {
+            hideLoading();
+            console.error('Error scheduling recording:', error);
+            showToast(error.message, 'error');
+        }
+    }
+
+    // Optional: Add keyboard shortcuts for accessibility
+    document.addEventListener('keydown', function(event) {
+        // Close toast with Escape key
+        if (event.key === 'Escape') {
+            hideToast();
+        }
+    });
+
+    // Optional: Auto-refresh guide data every 5 minutes to keep it current
+    // Uncomment if you want this feature
+    /*
+    setInterval(function() {
+        // Only refresh if user hasn't interacted recently
+        const lastInteraction = Date.now() - (window.lastUserInteraction || 0);
+        if (lastInteraction > 60000) { // 1 minute of inactivity
+            window.location.reload();
+        }
+    }, 300000); // 5 minutes
+
+    // Track user interaction
+    document.addEventListener('click', function() {
+        window.lastUserInteraction = Date.now();
+    });
+    */
+</script>
+{% endblock %}

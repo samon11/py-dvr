@@ -244,14 +244,14 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
 ### [P0] Task 4.1: Guide Page - List View
 **Estimate:** 3 hours
 
-- [ ] Create route: `GET /guide` in `app/routes/guide.py`
-- [ ] Create template: `templates/guide.html`
-- [ ] Display programs as simple list:
+- [x] Create route: `GET /guide` in `app/routes/guide.py`
+- [x] Create template: `templates/guide.html`
+- [x] Display programs as simple list:
   - Group by channel
   - Show: time, title, description
   - Show only next 12 hours (keep it simple)
-- [ ] Add "Record" button for each program
-- [ ] Make it readable with basic CSS
+- [x] Add "Record" button for each program
+- [x] Make it readable with basic CSS
 
 **Deliverable:** Working guide page showing programs
 
