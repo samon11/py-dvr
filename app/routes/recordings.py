@@ -6,11 +6,12 @@ recordings, including scheduling new recordings from the guide.
 """
 
 import logging
-from typing import Optional
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.config import get_settings
 from app.database import get_db
@@ -190,4 +191,165 @@ async def create_recording(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create recording. Please try again."
+        )
+
+
+@router.delete(
+    "/api/recordings/{recording_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["Recordings"]
+)
+async def cancel_recording(
+    recording_id: int,
+    db: Session = Depends(get_db)
+) -> None:
+    """
+    Cancel a scheduled recording.
+
+    Only recordings with status='scheduled' can be cancelled.
+    In-progress or completed recordings cannot be cancelled.
+
+    Args:
+        recording_id: The ID of the recording to cancel
+        db: Database session from dependency injection
+
+    Raises:
+        HTTPException 404: If recording does not exist
+        HTTPException 409: If recording cannot be cancelled (wrong status)
+
+    Example:
+        DELETE /api/recordings/123
+    """
+    logger.info(f"Cancelling recording: {recording_id}")
+
+    # Find the recording
+    recording = db.query(Recording).filter(Recording.id == recording_id).first()
+    if not recording:
+        logger.warning(f"Recording not found: {recording_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Recording with ID {recording_id} not found"
+        )
+
+    # Check if recording can be cancelled
+    if not recording.can_cancel():
+        logger.warning(
+            f"Cannot cancel recording {recording_id}: status={recording.status.value}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot cancel recording with status '{recording.status.value}'. "
+                   "Only scheduled recordings can be cancelled."
+        )
+
+    try:
+        # Mark as cancelled
+        recording.mark_cancelled()
+        db.commit()
+
+        logger.info(f"Recording {recording_id} cancelled successfully")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to cancel recording {recording_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to cancel recording. Please try again."
+        )
+
+
+# ============================================================================
+# Page Routes
+# ============================================================================
+
+@router.get("/scheduled", response_class=HTMLResponse, tags=["Navigation"])
+async def scheduled_recordings_page(
+    request: Request,
+    db: Session = Depends(get_db)
+) -> HTMLResponse:
+    """
+    Render the scheduled recordings page.
+
+    Displays all upcoming recordings with status='scheduled' or 'in_progress',
+    sorted by air time. Users can view recording details and cancel scheduled
+    recordings.
+
+    Args:
+        request: FastAPI Request object for template context
+        db: Database session from dependency injection
+
+    Returns:
+        HTMLResponse: Rendered scheduled.html template with recordings list
+    """
+    from app.main import templates
+
+    try:
+        # Query scheduled and in-progress recordings with joined schedule/program/station data
+        recordings = (
+            db.query(Recording)
+            .options(
+                joinedload(Recording.schedule).joinedload(Schedule.program),
+                joinedload(Recording.schedule).joinedload(Schedule.station)
+            )
+            .filter(Recording.status.in_([
+                RecordingStatus.SCHEDULED,
+                RecordingStatus.IN_PROGRESS
+            ]))
+            .join(Schedule)
+            .order_by(Schedule.air_datetime)
+            .all()
+        )
+
+        logger.info(f"Found {len(recordings)} scheduled/in-progress recordings")
+
+        # Format recordings for template
+        recordings_data = []
+        for recording in recordings:
+            schedule = recording.schedule
+            program = schedule.program
+            station = schedule.station
+
+            # Format datetime as ISO string with Z suffix for UTC
+            air_datetime_str = schedule.air_datetime.isoformat()
+            if not air_datetime_str.endswith('Z') and '+' not in air_datetime_str:
+                air_datetime_str += 'Z'
+
+            # Calculate total duration with padding
+            total_duration_seconds = (
+                recording.padding_start_seconds +
+                schedule.duration_seconds +
+                recording.padding_end_seconds
+            )
+            total_duration_minutes = total_duration_seconds // 60
+
+            recordings_data.append({
+                "recording_id": recording.id,
+                "schedule_id": schedule.id,
+                "program_title": program.title,
+                "channel_number": station.channel_number,
+                "channel_name": station.name,
+                "air_datetime_utc": air_datetime_str,
+                "duration_minutes": schedule.duration_seconds // 60,
+                "total_duration_minutes": total_duration_minutes,
+                "padding_start_seconds": recording.padding_start_seconds,
+                "padding_end_seconds": recording.padding_end_seconds,
+                "status": recording.status.value,
+                "can_cancel": recording.can_cancel(),
+            })
+
+        return templates.TemplateResponse(
+            "scheduled.html",
+            {
+                "request": request,
+                "recordings": recordings_data,
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error loading scheduled recordings page: {e}", exc_info=True)
+        return templates.TemplateResponse(
+            "scheduled.html",
+            {
+                "request": request,
+                "recordings": [],
+                "error": "Failed to load scheduled recordings. Please try again later.",
+            }
         )

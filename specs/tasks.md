@@ -274,13 +274,13 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
 ### [P0] Task 4.3: Scheduled Recordings Page
 **Estimate:** 2 hours
 
-- [ ] Create route: `GET /scheduled` in `app/routes/recordings.py`
-- [ ] Create template: `templates/scheduled.html`
-- [ ] Display upcoming recordings as list:
+- [x] Create route: `GET /scheduled` in `app/routes/recordings.py`
+- [x] Create template: `templates/scheduled.html`
+- [x] Display upcoming recordings as list:
   - Show: program title, channel, date/time, status
   - Sort by air time
-- [ ] Add "Cancel" button for each recording
-- [ ] Implement cancel action: `DELETE /api/recordings/{id}`
+- [x] Add "Cancel" button for each recording
+- [x] Implement cancel action: `DELETE /api/recordings/{id}`
 
 **Deliverable:** User can view and cancel scheduled recordings
 

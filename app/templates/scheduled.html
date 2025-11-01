@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block title %}Scheduled Recordings - PyHDHRDVR{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Scheduled Recordings</h1>
+                <p class="text-gray-600 mt-2">View and manage upcoming recordings</p>
+            </div>
+            <div class="text-right">
+                <p class="text-3xl font-bold text-blue-600">{{ recordings|length }}</p>
+                <p class="text-sm text-gray-600">Upcoming</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification (hidden by default) -->
+    <div id="toast" class="fixed top-20 right-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg border-l-4 p-4 max-w-md">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <span id="toast-icon"></span>
+                </div>
+                <div class="ml-3 flex-1">
+                    <p id="toast-message" class="text-sm font-medium text-gray-900"></p>
+                </div>
+                <button onclick="hideToast()" class="ml-3 flex-shrink-0 text-gray-400 hover:text-gray-600">
+                    <span class="text-xl">&times;</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recordings List -->
+    {% if recordings %}
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="divide-y divide-gray-200">
+                {% for recording in recordings %}
+                <div class="p-6 hover:bg-gray-50 transition-colors" data-recording-id="{{ recording.recording_id }}">
+                    <div class="flex items-start justify-between">
+                        <!-- Recording Info -->
+                        <div class="flex-1 mr-4">
+                            <!-- Status Badge and Time -->
+                            <div class="flex items-center space-x-3 mb-2">
+                                <!-- Status Badge -->
+                                {% if recording.status == 'scheduled' %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Scheduled
+                                </span>
+                                {% elif recording.status == 'in_progress' %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 animate-pulse">
+                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <circle cx="10" cy="10" r="8"/>
+                                    </svg>
+                                    Recording Now
+                                </span>
+                                {% endif %}
+
+                                <!-- Air Time -->
+                                <span class="text-lg font-semibold text-gray-900 air-time" data-utc-time="{{ recording.air_datetime_utc }}">
+                                    Loading...
+                                </span>
+                            </div>
+
+                            <!-- Program Title -->
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">
+                                {{ recording.program_title }}
+                            </h3>
+
+                            <!-- Channel Info -->
+                            <div class="flex items-center space-x-2 text-sm text-gray-600 mb-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"></path>
+                                </svg>
+                                <span class="font-medium">{{ recording.channel_number }}</span>
+                                <span>{{ recording.channel_name }}</span>
+                            </div>
+
+                            <!-- Recording Details -->
+                            <div class="flex flex-wrap gap-4 text-sm text-gray-600">
+                                <div class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span>Duration: {{ recording.duration_minutes }} min</span>
+                                </div>
+                                <div class="flex items-center space-x-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    <span>Total with padding: {{ recording.total_duration_minutes }} min</span>
+                                </div>
+                            </div>
+
+                            <!-- Padding Info -->
+                            <div class="mt-2 text-xs text-gray-500">
+                                <span>Padding: Start {{ recording.padding_start_seconds }}s, End {{ recording.padding_end_seconds }}s</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex-shrink-0 flex flex-col space-y-2">
+                            {% if recording.can_cancel %}
+                            <button
+                                onclick="cancelRecording({{ recording.recording_id }}, '{{ recording.program_title|replace("'", "\\'") }}')"
+                                class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium text-sm transition-colors flex items-center space-x-2"
+                                data-recording-id="{{ recording.recording_id }}"
+                                aria-label="Cancel recording of {{ recording.program_title }}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                <span>Cancel</span>
+                            </button>
+                            {% else %}
+                            <button
+                                disabled
+                                class="bg-gray-400 text-white px-4 py-2 rounded-md cursor-not-allowed font-medium text-sm flex items-center space-x-2"
+                                aria-label="Cannot cancel {{ recording.program_title }}">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span>In Progress</span>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <!-- Empty State -->
+        <div class="bg-white rounded-lg shadow-md p-12 text-center">
+            <div class="text-6xl mb-4">📅</div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">No Scheduled Recordings</h2>
+            <p class="text-gray-600 mb-6">
+                You haven't scheduled any recordings yet.
+            </p>
+            <p class="text-gray-600 mb-6">
+                Browse the TV guide to find programs to record.
+            </p>
+            <div class="mt-8">
+                <a href="/guide" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium">
+                    Browse TV Guide
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Loading Spinner (hidden by default) -->
+    <div id="loading-spinner" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-lg font-medium text-gray-900">Processing...</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Convert all UTC times to browser local time on page load
+    function convertUTCTimesToLocal() {
+        const timeElements = document.querySelectorAll('.air-time');
+
+        timeElements.forEach(element => {
+            const utcTimeString = element.getAttribute('data-utc-time');
+            if (!utcTimeString) return;
+
+            try {
+                // Parse the UTC datetime
+                const utcDate = new Date(utcTimeString);
+
+                // Format date and time in local timezone
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+
+                const isToday = utcDate.toDateString() === today.toDateString();
+                const isTomorrow = utcDate.toDateString() === tomorrow.toDateString();
+
+                // Format time (e.g., "7:00 PM")
+                const timeString = utcDate.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+
+                // Format date prefix
+                let datePrefix;
+                if (isToday) {
+                    datePrefix = 'Today';
+                } else if (isTomorrow) {
+                    datePrefix = 'Tomorrow';
+                } else {
+                    // Show day of week and date (e.g., "Wed 11/6")
+                    datePrefix = utcDate.toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'numeric',
+                        day: 'numeric'
+                    });
+                }
+
+                // Combine date and time
+                element.textContent = `${datePrefix} ${timeString}`;
+
+                // Store the date object for sorting if needed
+                element.dataset.localDate = utcDate.toISOString();
+            } catch (error) {
+                console.error('Error converting time:', error);
+                element.textContent = 'Invalid time';
+            }
+        });
+    }
+
+    // Run conversion when page loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', convertUTCTimesToLocal);
+    } else {
+        convertUTCTimesToLocal();
+    }
+
+    window.addEventListener('load', function() {
+        const loadingElements = document.querySelectorAll('.air-time');
+        const needsConversion = Array.from(loadingElements).some(el => el.textContent === 'Loading...');
+        if (needsConversion) {
+            convertUTCTimesToLocal();
+        }
+    });
+
+    // Toast notification functions
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        const toastIcon = document.getElementById('toast-icon');
+        const toastMessage = document.getElementById('toast-message');
+        const toastContainer = toast.querySelector('div');
+
+        // Set icon and color based on type
+        if (type === 'success') {
+            toastIcon.textContent = '✓';
+            toastIcon.className = 'text-2xl text-green-600';
+            toastContainer.className = 'bg-white rounded-lg shadow-lg border-l-4 border-green-500 p-4 max-w-md';
+        } else if (type === 'error') {
+            toastIcon.textContent = '✕';
+            toastIcon.className = 'text-2xl text-red-600';
+            toastContainer.className = 'bg-white rounded-lg shadow-lg border-l-4 border-red-500 p-4 max-w-md';
+        } else if (type === 'info') {
+            toastIcon.textContent = 'ℹ';
+            toastIcon.className = 'text-2xl text-blue-600';
+            toastContainer.className = 'bg-white rounded-lg shadow-lg border-l-4 border-blue-500 p-4 max-w-md';
+        }
+
+        toastMessage.textContent = message;
+        toast.classList.remove('hidden');
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            hideToast();
+        }, 5000);
+    }
+
+    function hideToast() {
+        document.getElementById('toast').classList.add('hidden');
+    }
+
+    // Show/hide loading spinner
+    function showLoading() {
+        document.getElementById('loading-spinner').classList.remove('hidden');
+    }
+
+    function hideLoading() {
+        document.getElementById('loading-spinner').classList.add('hidden');
+    }
+
+    // Cancel recording function
+    async function cancelRecording(recordingId, programTitle) {
+        // Confirm cancellation
+        if (!confirm(`Are you sure you want to cancel the recording of "${programTitle}"?`)) {
+            return;
+        }
+
+        // Show loading state
+        showLoading();
+
+        try {
+            // Call API endpoint to cancel recording
+            const response = await fetch(`/api/recordings/${recordingId}`, {
+                method: 'DELETE',
+            });
+
+            hideLoading();
+
+            if (!response.ok) {
+                // Handle HTTP errors
+                const data = await response.json();
+                throw new Error(data.detail || 'Failed to cancel recording');
+            }
+
+            // Show success message
+            showToast(`Successfully cancelled recording of "${programTitle}"`, 'success');
+
+            // Remove the recording from the page
+            const recordingElement = document.querySelector(`[data-recording-id="${recordingId}"]`);
+            if (recordingElement) {
+                recordingElement.style.opacity = '0';
+                setTimeout(() => {
+                    recordingElement.remove();
+
+                    // Check if there are any recordings left
+                    const remainingRecordings = document.querySelectorAll('[data-recording-id]').length;
+                    if (remainingRecordings === 0) {
+                        // Reload page to show empty state
+                        window.location.reload();
+                    }
+                }, 300);
+            }
+
+        } catch (error) {
+            hideLoading();
+            console.error('Error cancelling recording:', error);
+            showToast(error.message, 'error');
+        }
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(event) {
+        // Close toast with Escape key
+        if (event.key === 'Escape') {
+            hideToast();
+        }
+    });
+
+    // Optional: Auto-refresh every 30 seconds to keep status current
+    setInterval(function() {
+        // Only refresh if there are in-progress recordings
+        const inProgressRecordings = document.querySelectorAll('.animate-pulse');
+        if (inProgressRecordings.length > 0) {
+            window.location.reload();
+        }
+    }, 30000); // 30 seconds
+</script>
+{% endblock %}
