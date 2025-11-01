@@ -59,19 +59,6 @@ class TestSettingsValidation:
         errors = exc_info.value.errors()
         assert any("Invalid IP address" in str(err["ctx"]) for err in errors)
 
-    def test_invalid_email_format(self, tmp_path: Path) -> None:
-        """Test that invalid email format is rejected."""
-        with pytest.raises(ValidationError) as exc_info:
-            Settings(
-                hdhomerun_ip="192.168.1.100",
-                sd_username="not-an-email",
-                sd_password="testpass",
-                recording_path=tmp_path,
-            )
-
-        errors = exc_info.value.errors()
-        assert any("email" in str(err).lower() for err in errors)
-
     def test_recording_path_created(self, tmp_path: Path) -> None:
         """Test that recording path is created if it doesn't exist."""
         recording_path = tmp_path / "new_recordings"

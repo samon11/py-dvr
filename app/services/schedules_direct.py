@@ -27,6 +27,7 @@ from app.schemas.schedules_direct import (
     Headend,
     AddLineupRequest,
     AddLineupResponse,
+    DeleteLineupResponse,
     SDError,
     SDErrorData,
 )
@@ -207,10 +208,10 @@ class SchedulesDirectClient:
 
     async def get_schedules(
         self,
-        station_ids: list[str]
+        station_ids: list[dict]
     ) -> SchedulesResponse:
         """POST /schedules - Get schedules (batch, max 5000 stations)"""
-        response_data = await self._request("POST", "/schedules", json=[{"stationID": sid} for sid in station_ids])
+        response_data = await self._request("POST", "/schedules", json=station_ids)
         return SchedulesResponse.model_validate(response_data)
 
     async def get_programs(self, program_ids: list[str]) -> ProgramsResponse:
@@ -227,6 +228,11 @@ class SchedulesDirectClient:
         """PUT /lineups/{lineupID} - Add a lineup to the user's account."""
         response_data = await self._request("PUT", f"/lineups/{lineup_id}", json=AddLineupRequest(lineup=lineup_id).model_dump())
         return AddLineupResponse(**response_data)
+
+    async def delete_lineup(self, lineup_id: str) -> DeleteLineupResponse:
+        """DELETE /lineups/{lineup_id} - Delete a lineup from user's account."""
+        response_data = await self._request("DELETE", f"/lineups/{lineup_id}")
+        return DeleteLineupResponse(**response_data)
 
     # Error Handling
     ERROR_CODES = {

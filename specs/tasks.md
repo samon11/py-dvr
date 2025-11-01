@@ -119,13 +119,13 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
 ### [P0] Task 2.1: Schedules Direct Client - Authentication
 **Estimate:** 2 hours
 
-- [ ] Create `app/services/schedules_direct.py`
-- [ ] Implement authentication:
+- [x] Create `app/services/schedules_direct.py`
+- [x] Implement authentication:
   - POST to `https://json.schedulesdirect.org/20141201/token`
   - Store token with expiration
   - Auto-refresh when expired
-- [ ] Add error handling for invalid credentials
-- [ ] Test with real SD account
+- [x] Add error handling for invalid credentials
+- [x] Test with real SD account
 
 **Deliverable:** Working SD authentication
 
@@ -134,17 +134,17 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
 ### [P0] Task 2.2: Schedules Direct Client - Guide Data
 **Estimate:** 3 hours
 
-- [ ] Implement lineup retrieval:
+- [x] Implement lineup retrieval:
   - GET user's lineups
   - GET stations for a lineup
-- [ ] Implement schedule retrieval:
+- [x] Implement schedule retrieval:
   - POST /schedules (batch request)
   - Parse schedule data
-- [ ] Implement program metadata retrieval:
+- [x] Implement program metadata retrieval:
   - POST /programs (batch request)
   - Parse program details
-- [ ] Create function to sync guide data to database
-- [ ] For MVP: Sync only 3 days of data (not 14)
+- [x] Create function to sync guide data to database
+- [x] For MVP: Sync only 3 days of data (not 14)
 
 **Deliverable:** Function that populates database with guide data
 

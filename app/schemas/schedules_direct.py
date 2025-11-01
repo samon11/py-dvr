@@ -133,6 +133,15 @@ class AddLineupResponse(BaseModel):
     changesRemaining: int
 
 
+class DeleteLineupResponse(BaseModel):
+    code: int
+    response: str
+    message: str
+    serverID: str
+    datetime: datetime
+    changesRemaining: int
+
+
 class StationLogo(BaseModel):
     URL: str
     height: int

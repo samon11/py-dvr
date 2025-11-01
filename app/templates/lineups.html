@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Lineup Management - PyHDHRDVR{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-3xl font-bold text-gray-900">Lineup Management</h1>
+        <p class="text-gray-600 mt-2">Search for and manage your Schedules Direct TV lineups</p>
+    </div>
+
+    <!-- Toast Notification (hidden by default) -->
+    <div id="toast" class="fixed top-20 right-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg border-l-4 p-4 max-w-md">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <span id="toast-icon"></span>
+                </div>
+                <div class="ml-3 flex-1">
+                    <p id="toast-message" class="text-sm font-medium text-gray-900"></p>
+                </div>
+                <button onclick="hideToast()" class="ml-3 flex-shrink-0 text-gray-400 hover:text-gray-600">
+                    <span class="text-xl">&times;</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Lineups Section -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Your Lineups</h2>
+
+        <div id="current-lineups">
+            {% if lineups %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transport</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lineup ID</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="lineups-tbody">
+                        {% for lineup in lineups %}
+                        <tr id="lineup-row-{{ lineup.id }}" class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ lineup.name }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-600">{{ lineup.transport or 'N/A' }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-600">{{ lineup.location or 'N/A' }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-mono text-gray-500">{{ lineup.id }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button onclick="confirmDeleteLineup('{{ lineup.id }}', '{{ lineup.name }}')"
+                                        class="text-red-600 hover:text-red-900 font-medium">
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-gray-500">
+                <p class="text-lg">No lineups configured yet.</p>
+                <p class="text-sm mt-2">Search for available lineups below to get started.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Search Headends Section -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Search for Lineups</h2>
+
+        <form id="search-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="country" class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <select id="country" name="country"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="USA">USA</option>
+                        <option value="CAN">Canada</option>
+                        <option value="MEX">Mexico</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="postal_code" class="block text-sm font-medium text-gray-700 mb-1">Postal/ZIP Code</label>
+                    <input type="text" id="postal_code" name="postal_code"
+                           placeholder="e.g., 94105"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           required>
+                </div>
+
+                <div class="flex items-end">
+                    <button type="submit"
+                            class="w-full bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+                        Search
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Search Results Section -->
+    <div id="search-results" class="bg-white rounded-lg shadow-md p-6 hidden">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Available Lineups</h2>
+        <div id="results-content"></div>
+    </div>
+
+    <!-- Loading Spinner (hidden by default) -->
+    <div id="loading-spinner" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-lg font-medium text-gray-900">Loading...</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Toast notification functions
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        const toastIcon = document.getElementById('toast-icon');
+        const toastMessage = document.getElementById('toast-message');
+        const toastContainer = toast.querySelector('div');
+
+        // Set icon and color based on type
+        if (type === 'success') {
+            toastIcon.textContent = '✓';
+            toastIcon.className = 'text-2xl text-green-600';
+            toastContainer.className = 'bg-white rounded-lg shadow-lg border-l-4 border-green-500 p-4 max-w-md';
+        } else if (type === 'error') {
+            toastIcon.textContent = '✕';
+            toastIcon.className = 'text-2xl text-red-600';
+            toastContainer.className = 'bg-white rounded-lg shadow-lg border-l-4 border-red-500 p-4 max-w-md';
+        }
+
+        toastMessage.textContent = message;
+        toast.classList.remove('hidden');
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            hideToast();
+        }, 5000);
+    }
+
+    function hideToast() {
+        document.getElementById('toast').classList.add('hidden');
+    }
+
+    // Show/hide loading spinner
+    function showLoading() {
+        document.getElementById('loading-spinner').classList.remove('hidden');
+    }
+
+    function hideLoading() {
+        document.getElementById('loading-spinner').classList.add('hidden');
+    }
+
+    // Search form submission
+    document.getElementById('search-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const country = document.getElementById('country').value;
+        const postalCode = document.getElementById('postal_code').value;
+
+        showLoading();
+
+        try {
+            const response = await fetch(`/api/headends?country=${country}&postal_code=${postalCode}`);
+            const data = await response.json();
+
+            hideLoading();
+
+            if (!response.ok) {
+                throw new Error(data.detail || 'Failed to search for lineups');
+            }
+
+            displaySearchResults(data.headends);
+        } catch (error) {
+            hideLoading();
+            showToast(error.message, 'error');
+        }
+    });
+
+    // Display search results
+    function displaySearchResults(headends) {
+        const resultsSection = document.getElementById('search-results');
+        const resultsContent = document.getElementById('results-content');
+
+        if (!headends || headends.length === 0) {
+            resultsContent.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <p class="text-lg">No lineups found for this location.</p>
+                    <p class="text-sm mt-2">Try a different postal code.</p>
+                </div>
+            `;
+            resultsSection.classList.remove('hidden');
+            return;
+        }
+
+        let html = '<div class="space-y-4">';
+
+        headends.forEach(headend => {
+            html += `
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h3 class="font-semibold text-lg text-gray-900">${headend.transport} - ${headend.location}</h3>
+                    <p class="text-sm text-gray-500 mb-3">Headend: ${headend.headend}</p>
+                    <div class="space-y-2">
+            `;
+
+            headend.lineups.forEach(lineup => {
+                html += `
+                    <div class="flex items-center justify-between bg-gray-50 p-3 rounded">
+                        <div>
+                            <div class="font-medium text-gray-900">${lineup.name}</div>
+                            <div class="text-sm text-gray-500 font-mono">${lineup.lineup}</div>
+                        </div>
+                        <button onclick="addLineup('${lineup.lineup}')"
+                                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-medium text-sm">
+                            Add
+                        </button>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+
+        resultsContent.innerHTML = html;
+        resultsSection.classList.remove('hidden');
+    }
+
+    // Add lineup
+    async function addLineup(lineupId) {
+        showLoading();
+
+        try {
+            const response = await fetch(`/api/lineups/${lineupId}`, {
+                method: 'POST',
+            });
+            const data = await response.json();
+
+            hideLoading();
+
+            if (!response.ok) {
+                throw new Error(data.detail || 'Failed to add lineup');
+            }
+
+            showToast(`Successfully added lineup: ${lineupId}`, 'success');
+
+            // Reload the page to refresh the lineups list
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } catch (error) {
+            hideLoading();
+            showToast(error.message, 'error');
+        }
+    }
+
+    // Confirm delete lineup
+    function confirmDeleteLineup(lineupId, lineupName) {
+        if (confirm(`Are you sure you want to delete "${lineupName}"?\n\nThis will also delete all associated stations, schedules, and recordings.`)) {
+            deleteLineup(lineupId);
+        }
+    }
+
+    // Delete lineup
+    async function deleteLineup(lineupId) {
+        showLoading();
+
+        try {
+            const response = await fetch(`/api/lineups/${lineupId}`, {
+                method: 'DELETE',
+            });
+            const data = await response.json();
+
+            hideLoading();
+
+            if (!response.ok) {
+                throw new Error(data.detail || 'Failed to delete lineup');
+            }
+
+            showToast(`Successfully deleted lineup: ${lineupId}`, 'success');
+
+            // Remove the row from the table
+            const row = document.getElementById(`lineup-row-${lineupId}`);
+            if (row) {
+                row.remove();
+            }
+
+            // If no more lineups, show empty state
+            const tbody = document.getElementById('lineups-tbody');
+            if (!tbody || tbody.children.length === 0) {
+                document.getElementById('current-lineups').innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <p class="text-lg">No lineups configured yet.</p>
+                        <p class="text-sm mt-2">Search for available lineups below to get started.</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            hideLoading();
+            showToast(error.message, 'error');
+        }
+    }
+</script>
+{% endblock %}
