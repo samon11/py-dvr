@@ -6,12 +6,13 @@ the HDHomeRun device, sourced from Schedules Direct lineup data.
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Index, String, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 
 if TYPE_CHECKING:
+    from app.models.lineup import Lineup
     from app.models.schedule import Schedule
 
 
@@ -24,10 +25,14 @@ class Station(Base):
 
     Attributes:
         station_id: Schedules Direct station ID (primary key)
+        lineup_id: Foreign key to lineups table
         callsign: FCC call sign (e.g., "KBCW", "KTVU")
         channel_number: Physical or virtual channel number (e.g., "2.1", "44")
         name: Human-readable station name (e.g., "CW Bay Area", "FOX 2")
+        affiliate: Network affiliation (e.g., "NBC", "CBS", "FOX")
+        logo_url: URL to station logo image
         enabled: Whether station is enabled for guide display
+        lineup: Relationship to Lineup entity
         schedules: Relationship to Schedule entries for programs on this station
 
     Indexes:
@@ -47,6 +52,15 @@ class Station(Base):
         String(32),
         primary_key=True,
         doc="Schedules Direct station ID"
+    )
+
+    # Foreign key to lineup
+    lineup_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("lineups.lineup_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Reference to lineups table"
     )
 
     # Core station identification
@@ -69,7 +83,19 @@ class Station(Base):
         doc="Station display name"
     )
 
-    # MVP: Simplified - only enabled flag, no affiliate or logo
+    # Additional metadata
+    affiliate: Mapped[str | None] = mapped_column(
+        String(32),
+        nullable=True,
+        doc="Network affiliation (NBC, CBS, FOX, etc.)"
+    )
+
+    logo_url: Mapped[str | None] = mapped_column(
+        String(512),
+        nullable=True,
+        doc="URL to station logo image"
+    )
+
     enabled: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
@@ -79,6 +105,12 @@ class Station(Base):
     )
 
     # Relationships
+    lineup: Mapped["Lineup"] = relationship(
+        "Lineup",
+        back_populates="stations",
+        doc="The lineup this station belongs to"
+    )
+
     schedules: Mapped[list["Schedule"]] = relationship(
         "Schedule",
         back_populates="station",

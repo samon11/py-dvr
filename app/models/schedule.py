@@ -32,6 +32,7 @@ class Schedule(Base):
         station_id: Foreign key to stations table
         air_datetime: When the program airs (UTC timezone-aware)
         duration_seconds: Duration of this specific airing
+        md5_hash: MD5 hash from Schedules Direct for change detection
         program: Relationship to Program entity
         station: Relationship to Station entity
         recordings: Relationship to Recording entities for this airing
@@ -40,7 +41,6 @@ class Schedule(Base):
         - No is_new, is_live, is_premiere, is_finale flags (post-MVP)
         - No audio_properties, video_properties (post-MVP)
         - No part_number, part_total for multi-part episodes (post-MVP)
-        - No md5_hash for change detection (post-MVP)
 
     Indexes:
         - Primary key on schedule_id
@@ -94,6 +94,13 @@ class Schedule(Base):
         Integer,
         nullable=False,
         doc="Duration of this airing in seconds"
+    )
+
+    # Change detection
+    md5_hash: Mapped[str | None] = mapped_column(
+        String(32),
+        nullable=True,
+        doc="MD5 hash from Schedules Direct for change detection"
     )
 
     # Relationships
