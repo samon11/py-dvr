@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PyHDHRDVR - DVR management interface for HDHomeRun network TV tuners">
+    <title>{% block title %}PyHDHRDVR{% endblock %}</title>
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Custom Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2c3e50',
+                        secondary: '#34495e',
+                    }
+                }
+            }
+        }
+    </script>
+
+    {% block extra_head %}
+    <!-- Additional head content from child templates -->
+    {% endblock %}
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <!-- Header with Navigation -->
+    <header class="bg-primary text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="/" class="flex items-center space-x-2 text-xl font-semibold hover:text-blue-400 transition-colors">
+                    <span class="text-2xl">📺</span>
+                    <span>PyHDHRDVR</span>
+                </a>
+
+                <!-- Navigation -->
+                <nav class="flex space-x-1">
+                    <a href="/guide"
+                       class="px-4 py-2 rounded-md font-medium transition-colors {% if request.url.path == '/guide' %}bg-blue-500{% else %}hover:bg-secondary{% endif %}">
+                        Guide
+                    </a>
+                    <a href="/scheduled"
+                       class="px-4 py-2 rounded-md font-medium transition-colors {% if request.url.path == '/scheduled' %}bg-blue-500{% else %}hover:bg-secondary{% endif %}">
+                        Scheduled
+                    </a>
+                    <a href="/recordings"
+                       class="px-4 py-2 rounded-md font-medium transition-colors {% if request.url.path == '/recordings' %}bg-blue-500{% else %}hover:bg-secondary{% endif %}">
+                        Recordings
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% block content %}
+        <!-- Page-specific content goes here -->
+        <div class="bg-white rounded-lg shadow-md p-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">Welcome to PyHDHRDVR</h1>
+            <p class="text-gray-700">This is the base template. Child templates should override the content block.</p>
+        </div>
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-primary text-white mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center">
+            <p class="text-sm">&copy; 2025 PyHDHRDVR | DVR management for HDHomeRun devices</p>
+            <p class="text-xs text-gray-400 mt-2">
+                Open source project | <a href="/api/docs" target="_blank" class="text-blue-400 hover:text-blue-300 hover:underline">API Documentation</a>
+            </p>
+        </div>
+    </footer>
+
+    {% block extra_scripts %}
+    <!-- Additional scripts from child templates -->
+    {% endblock %}
+</body>
+</html>

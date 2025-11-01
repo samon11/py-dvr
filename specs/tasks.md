@@ -101,14 +101,14 @@ A user can configure the app, browse TV listings, schedule one-time recordings, 
 ### [P0] Task 1.4: Basic FastAPI Application
 **Estimate:** 2 hours
 
-- [ ] Create `app/main.py` with FastAPI app instance
-- [ ] Add static file serving for CSS/JS
-- [ ] Configure Jinja2 templates
-- [ ] Create base template (`templates/base.html`) with:
+- [x] Create `app/main.py` with FastAPI app instance
+- [x] Add static file serving for CSS/JS
+- [x] Configure Jinja2 templates
+- [x] Create base template (`templates/base.html`) with:
   - Simple navigation (Guide, Scheduled, Recordings)
   - Basic CSS for readable layout
-- [ ] Add health check endpoint: `GET /health`
-- [ ] Test app starts successfully: `uvicorn app.main:app`
+- [x] Add health check endpoint: `GET /health`
+- [x] Test app starts successfully: `uvicorn app.main:app`
 
 **Deliverable:** Running FastAPI app with basic templating
 

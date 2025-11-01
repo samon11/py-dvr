@@ -29,9 +29,9 @@ pyhdhrdvr/
 │   │   ├── schedules_direct.py  # Schedules Direct API client
 │   │   ├── hdhomerun.py         # HDHomeRun device control
 │   │   └── recorder.py          # Recording scheduler and execution
-│   └── routes/              # FastAPI routes (web pages and API endpoints)
-├── templates/               # Jinja2 HTML templates
-├── static/                  # CSS, JavaScript, images
+│   ├── routes/              # FastAPI routes (web pages and API endpoints)
+│   ├── templates/           # Jinja2 HTML templates
+│   └── static/              # CSS, JavaScript, images
 ├── tests/                   # Test files
 ├── specs/                   # Design documentation
 │   ├── plan.md             # Full requirements document
