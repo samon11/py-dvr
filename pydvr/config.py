@@ -122,28 +122,28 @@ class Settings(BaseSettings):
     )
 
     # HDHomeRun Configuration
-    hdhomerun_ip: str = Field(
-        ...,
+    hdhomerun_ip: str | None = Field(
+        default=None,
         description="IP address of HDHomeRun device on local network",
         examples=["192.168.1.100"],
     )
 
     # Schedules Direct Configuration
-    sd_username: str = Field(
-        ...,
+    sd_username: str | None = Field(
+        default=None,
         description="Schedules Direct username (email address)",
         examples=["user@example.com"],
     )
 
-    sd_password: str = Field(
-        ...,
+    sd_password: str | None = Field(
+        default=None,
         description="Schedules Direct password",
         min_length=1,
     )
 
     # Recording Configuration
-    recording_path: Path = Field(
-        ...,
+    recording_path: Path | None = Field(
+        default=None,
         description="Directory where recordings will be saved",
         examples=["/mnt/recordings", "C:/Recordings"],
     )
@@ -204,13 +204,16 @@ class Settings(BaseSettings):
 
     @field_validator("hdhomerun_ip")
     @classmethod
-    def validate_ip_format(cls, v: str) -> str:
+    def validate_ip_format(cls, v: str | None) -> str | None:
         """
         Validate that HDHomeRun IP is in a reasonable format.
 
         Note: We do basic format checking but don't verify the device exists
         at this IP - that will be checked at runtime when connecting.
         """
+        if v is None:
+            return None
+
         if not v or v.strip() == "":
             raise ValueError("HDHomeRun IP address cannot be empty")
 
@@ -234,12 +237,15 @@ class Settings(BaseSettings):
 
     @field_validator("recording_path")
     @classmethod
-    def validate_recording_path(cls, v: Path) -> Path:
+    def validate_recording_path(cls, v: Path | None) -> Path | None:
         """
         Validate and prepare the recording path.
 
         Creates the directory if it doesn't exist and verifies it's writable.
         """
+        if v is None:
+            return None
+
         if not v:
             raise ValueError("Recording path cannot be empty")
 
@@ -272,8 +278,49 @@ class Settings(BaseSettings):
 
         return path
 
+    def is_configured(self) -> bool:
+        """
+        Check if all required configuration is present.
+
+        Returns:
+            bool: True if all required fields are configured, False otherwise
+        """
+        return all(
+            [
+                self.hdhomerun_ip is not None,
+                self.sd_username is not None,
+                self.sd_password is not None,
+                self.recording_path is not None,
+            ]
+        )
+
+    def validate_required(self) -> None:
+        """
+        Validate that all required configuration is present.
+
+        Raises:
+            ValueError: If any required configuration is missing
+        """
+        missing = []
+        if self.hdhomerun_ip is None:
+            missing.append("hdhomerun_ip")
+        if self.sd_username is None:
+            missing.append("sd_username")
+        if self.sd_password is None:
+            missing.append("sd_password")
+        if self.recording_path is None:
+            missing.append("recording_path")
+
+        if missing:
+            raise ValueError(
+                f"Missing required configuration: {', '.join(missing)}. "
+                f"Run 'pydvr setup' to configure the application."
+            )
+
     def get_hdhomerun_base_url(self) -> str:
         """Get the base URL for HDHomeRun API calls."""
+        if self.hdhomerun_ip is None:
+            raise ValueError("HDHomeRun IP not configured. Run 'pydvr setup' first.")
         return f"http://{self.hdhomerun_ip}"
 
     def get_schedules_direct_base_url(self) -> str:

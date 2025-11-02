@@ -15,23 +15,34 @@ from sqlalchemy.orm import Session, sessionmaker
 from alembic import command
 from pydvr.config import get_settings
 
-# Get settings
-settings = get_settings()
+# Lazy initialization of database engine and session
+_engine = None
+_SessionLocal = None
 
-# Create database engine
-# For SQLite: Check same thread is False to allow multiple threads
-engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
-    echo=settings.debug,  # Log SQL queries in debug mode
-)
 
-# Create session factory
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine,
-)
+def _get_engine():
+    """Get or create the database engine (lazy initialization)."""
+    global _engine
+    if _engine is None:
+        settings = get_settings()
+        _engine = create_engine(
+            settings.database_url,
+            connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
+            echo=settings.debug,  # Log SQL queries in debug mode
+        )
+    return _engine
+
+
+def _get_session_factory():
+    """Get or create the session factory (lazy initialization)."""
+    global _SessionLocal
+    if _SessionLocal is None:
+        _SessionLocal = sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=_get_engine(),
+        )
+    return _SessionLocal
 
 
 def get_db() -> Generator[Session]:
@@ -50,6 +61,7 @@ def get_db() -> Generator[Session]:
         >>> def get_items(db: Session = Depends(get_db)):
         >>>     return db.query(Item).all()
     """
+    SessionLocal = _get_session_factory()
     db = SessionLocal()
     try:
         yield db
@@ -64,6 +76,7 @@ def is_database_empty() -> bool:
     Returns:
         bool: True if the database is empty (no tables), False otherwise
     """
+    engine = _get_engine()
     inspector = inspect(engine)
     tables = inspector.get_table_names()
     return len(tables) == 0
