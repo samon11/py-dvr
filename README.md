@@ -2,8 +2,6 @@
 
 A web-based DVR management interface for HDHomeRun network TV tuner devices. Schedule recordings, browse TV program schedules, and automatically capture live TV streams to disk.
 
-> **Status:** MVP Development - Alpha stage
-
 ## Features
 
 - Browse TV program schedules from Schedules Direct
