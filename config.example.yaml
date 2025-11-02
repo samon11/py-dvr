@@ -1,0 +1,65 @@
+# PyDVR Configuration File
+# Copy this file to config.yaml and update with your actual values
+
+# ============================================================================
+# HDHomeRun Configuration
+# ============================================================================
+# IP address of your HDHomeRun device on your local network
+# Find this in the HDHomeRun app or via device discovery
+hdhomerun:
+  ip: "192.168.1.100"
+
+# ============================================================================
+# Schedules Direct Configuration
+# ============================================================================
+# Schedules Direct account credentials (https://www.schedulesdirect.org/)
+# Required for TV guide data - subscription costs $25/year
+schedules_direct:
+  username: "your_email@example.com"
+  password: "your_password"
+
+# ============================================================================
+# Recording Configuration
+# ============================================================================
+# Directory where recordings will be saved
+# Must be writable by the application
+recording:
+  path: "/path/to/recordings"  # Windows: C:/Recordings, Linux/Mac: /home/user/recordings
+
+  # Time in seconds to start recording before scheduled start time (default: 60)
+  padding_start: 60
+
+  # Time in seconds to continue recording after scheduled end time (default: 120)
+  padding_end: 120
+
+# ============================================================================
+# Database Configuration
+# ============================================================================
+database:
+  # SQLite database location (default is a local file in the project directory)
+  url: "sqlite:///./pyhdhrdvr.db"
+
+  # For PostgreSQL (advanced users):
+  # url: "postgresql://user:password@localhost/pyhdhrdvr"
+
+# ============================================================================
+# Application Settings
+# ============================================================================
+server:
+  # Host to bind the application to (default: 0.0.0.0 for all interfaces)
+  host: "0.0.0.0"
+
+  # Port to bind the application to (default: 80)
+  port: 80
+
+  # Enable debug mode with detailed error messages (default: false)
+  debug: false
+
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL (default: INFO)
+  log_level: "INFO"
+
+# ============================================================================
+# Advanced Settings (Optional)
+# ============================================================================
+# Path to Schedules Direct token cache file
+token_cache_path: "./sd_token_cache.json"

@@ -19,9 +19,20 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from pydvr.config import get_settings
 from pydvr.services.recorder import RecordingScheduler
+from pydvr.logging_config import setup_logging, get_logger
+from pydvr.paths import get_log_file
 
 # Initialize settings
 settings = get_settings()
+
+# Setup logging
+setup_logging(
+    log_level=settings.log_level,
+    log_file=get_log_file() if not settings.debug else None,
+)
+
+# Get logger for this module
+logger = get_logger(__name__)
 
 # Initialize background scheduler for periodic jobs (like guide sync)
 scheduler = AsyncIOScheduler()
@@ -43,10 +54,12 @@ async def sync_guide_data_job():
     try:
         sync = GuideDataSync(db)
         result = await sync.sync_guide_data(days=3)
-        print(f"Guide sync completed: {result.schedules_updated} schedules, "
-              f"{result.programs_updated} programs")
+        logger.info(
+            f"Guide sync completed: {result.schedules_updated} schedules, "
+            f"{result.programs_updated} programs"
+        )
     except Exception as e:
-        print(f"Guide sync failed: {e}")
+        logger.error(f"Guide sync failed: {e}", exc_info=True)
     finally:
         db.close()
 
@@ -71,9 +84,9 @@ async def lifespan(app: FastAPI):
     from pydvr.database import SessionLocal
 
     # Startup
-    print(f"PyDVR starting on {settings.host}:{settings.port}")
-    print(f"HDHomeRun device: {settings.hdhomerun_ip}")
-    print(f"Recording path: {settings.recording_path}")
+    logger.info(f"PyDVR starting on {settings.host}:{settings.port}")
+    logger.info(f"HDHomeRun device: {settings.hdhomerun_ip}")
+    logger.info(f"Recording path: {settings.recording_path}")
 
     # Start background scheduler for periodic jobs
     # Daily sync at 4 AM
@@ -85,7 +98,7 @@ async def lifespan(app: FastAPI):
         id="daily_guide_sync"
     )
     scheduler.start()
-    print("Background scheduler started - daily guide sync at 4 AM")
+    logger.info("Background scheduler started - daily guide sync at 4 AM")
 
     # Start recording scheduler
     # This runs continuously, checking for upcoming recordings every 10 seconds
@@ -93,21 +106,21 @@ async def lifespan(app: FastAPI):
     recording_task = asyncio.create_task(
         recording_scheduler.start(db_session_factory=SessionLocal)
     )
-    print("Recording scheduler started - monitoring for upcoming recordings")
+    logger.info("Recording scheduler started - monitoring for upcoming recordings")
 
     yield
 
     # Shutdown
-    print("PyDVR shutting down...")
+    logger.info("PyDVR shutting down...")
 
     # Shutdown recording scheduler
     await recording_scheduler.stop()
-    print("Recording scheduler stopped")
+    logger.info("Recording scheduler stopped")
 
     # Shutdown periodic scheduler
     if scheduler.running:
         scheduler.shutdown()
-        print("Background scheduler stopped")
+        logger.info("Background scheduler stopped")
 
 
 # Initialize FastAPI application

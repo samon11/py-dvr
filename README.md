@@ -36,14 +36,14 @@ pip install -e ".[dev]"
 ### 2. Configuration
 
 ```bash
-# Create a configuration file
-# You can place this in your current directory or at ~/.pydvr/.env
-cp .env.example .env
+# Run the interactive setup wizard
+pydvr setup
 
-# Edit .env with your settings:
-# - Set HDHOMERUN_IP to your device's IP address
-# - Set SD_USERNAME and SD_PASSWORD with your Schedules Direct credentials
-# - Set RECORDING_PATH to where you want recordings saved
+# This will prompt you for:
+# - HDHomeRun device IP address
+# - Schedules Direct credentials
+# - Recording directory path
+# - Optional settings (server port, logging, etc.)
 ```
 
 ### 3. Sync Guide Data
@@ -72,22 +72,167 @@ pydvr server --reload
 # http://localhost:80
 ```
 
+### 5. Running as a Background Process or on Startup
+
+#### Linux - Using systemd (Starts on Boot)
+
+Create a systemd service file:
+
+```bash
+# Create service file
+sudo nano /etc/systemd/system/pydvr.service
+```
+
+Add the following content (replace `your-username` and paths):
+
+```ini
+[Unit]
+Description=PyDVR - HDHomeRun DVR Service
+After=network.target
+
+[Service]
+Type=simple
+User=your-username
+ExecStart=/usr/local/bin/pydvr server
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start the service:
+
+```bash
+# Reload systemd
+sudo systemctl daemon-reload
+
+# Enable service to start on boot
+sudo systemctl enable pydvr
+
+# Start the service now
+sudo systemctl start pydvr
+
+# Check status
+sudo systemctl status pydvr
+
+# View logs
+sudo journalctl -u pydvr -f
+```
+
+#### macOS - Using launchd (Starts on Boot)
+
+Create a launch agent:
+
+```bash
+# Create directory if needed
+mkdir -p ~/Library/LaunchAgents
+
+# Create the plist file
+nano ~/Library/LaunchAgents/com.pydvr.server.plist
+```
+
+Add this content (adjust the path to your pydvr executable):
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.pydvr.server</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/pydvr</string>
+        <string>server</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/pydvr.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/pydvr.error.log</string>
+</dict>
+</plist>
+```
+
+Load and start:
+
+```bash
+# Load the service (starts on boot)
+launchctl load ~/Library/LaunchAgents/com.pydvr.server.plist
+
+# To unload (disable)
+launchctl unload ~/Library/LaunchAgents/com.pydvr.server.plist
+
+# View logs
+tail -f /tmp/pydvr.log
+```
+
+#### Windows - Using NSSM (Starts on Boot)
+
+Install as a Windows service using [NSSM](https://nssm.cc/download):
+
+```powershell
+# Download NSSM from https://nssm.cc/download
+
+# Install as a service (GUI method - recommended)
+nssm install PyDVR
+
+# Or command line (replace path with your Python Scripts directory)
+nssm install PyDVR "C:\Python311\Scripts\pydvr.exe" "server"
+
+# Start the service
+nssm start PyDVR
+
+# Check status
+nssm status PyDVR
+
+# Remove service if needed
+nssm remove PyDVR
+```
+
+#### Quick Background Process (No Auto-Start)
+
+If you just want to run in the background for the current session:
+
+**Linux/macOS:**
+```bash
+# Using screen
+screen -dmS pydvr pydvr server
+
+# Reattach later
+screen -r pydvr
+
+# Or using nohup
+nohup pydvr server &
+
+# View logs
+tail -f nohup.out
+```
+
+**Windows PowerShell:**
+```powershell
+# Run in background
+Start-Process pydvr -ArgumentList "server" -WindowStyle Hidden
+```
+
 ## Configuration
 
-All configuration is done via the `.env` file. See `.env.example` for all available options.
+Configuration is stored in `~/.config/pydvr/config.yaml` (Linux/macOS) or `%APPDATA%\PyDVR\config.yaml` (Windows).
 
-### Required Settings
+Run `pydvr paths` to see where configuration files are stored on your system.
 
-- `HDHOMERUN_IP` - IP address of your HDHomeRun device
-- `SD_USERNAME` - Your Schedules Direct username (email)
-- `SD_PASSWORD` - Your Schedules Direct password
-- `RECORDING_PATH` - Directory where recordings will be saved
+To manually edit configuration:
+```bash
+# See where config is stored
+pydvr paths
 
-### Optional Settings
-
-- `DATABASE_URL` - Database connection string (default: SQLite)
-- `DEFAULT_PADDING_START` - Seconds to start recording early (default: 60)
-- `DEFAULT_PADDING_END` - Seconds to continue after scheduled end (default: 120)
+# Edit with your preferred editor
+nano ~/.config/pydvr/config.yaml  # Linux/macOS
+```
 
 ## Usage
 

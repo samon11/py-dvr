@@ -1,15 +1,104 @@
 """
 Application configuration management.
 
-Uses Pydantic Settings to load configuration from environment variables and .env file.
+Uses Pydantic Settings to load configuration from YAML file, environment variables, or .env file.
+Configuration priority (highest to lowest):
+1. config.yaml (if exists)
+2. Environment variables
+3. .env file (fallback for backwards compatibility)
+
 Implements the Single Responsibility Principle by centralizing all configuration logic.
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
+import yaml
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from pydvr.paths import get_config_file, get_database_file, get_token_cache_file
+
+
+def load_yaml_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
+    """
+    Load configuration from YAML file.
+
+    Args:
+        config_path: Path to the YAML configuration file (default: XDG config dir)
+
+    Returns:
+        Dict[str, Any]: Configuration dictionary with flattened keys for Pydantic
+
+    Example YAML structure:
+        hdhomerun:
+          ip: "192.168.1.100"
+        schedules_direct:
+          username: "user@example.com"
+
+    This gets flattened to:
+        {"hdhomerun_ip": "192.168.1.100", "sd_username": "user@example.com"}
+    """
+    if config_path is None:
+        config_path = get_config_file()
+
+    if not config_path.exists():
+        return {}
+
+    try:
+        with open(config_path, "r") as f:
+            yaml_data = yaml.safe_load(f) or {}
+
+        # Flatten nested YAML structure to match Pydantic field names
+        flattened = {}
+
+        # HDHomeRun settings
+        if "hdhomerun" in yaml_data:
+            if "ip" in yaml_data["hdhomerun"]:
+                flattened["hdhomerun_ip"] = yaml_data["hdhomerun"]["ip"]
+
+        # Schedules Direct settings
+        if "schedules_direct" in yaml_data:
+            if "username" in yaml_data["schedules_direct"]:
+                flattened["sd_username"] = yaml_data["schedules_direct"]["username"]
+            if "password" in yaml_data["schedules_direct"]:
+                flattened["sd_password"] = yaml_data["schedules_direct"]["password"]
+
+        # Recording settings
+        if "recording" in yaml_data:
+            if "path" in yaml_data["recording"]:
+                flattened["recording_path"] = yaml_data["recording"]["path"]
+            if "padding_start" in yaml_data["recording"]:
+                flattened["default_padding_start"] = yaml_data["recording"]["padding_start"]
+            if "padding_end" in yaml_data["recording"]:
+                flattened["default_padding_end"] = yaml_data["recording"]["padding_end"]
+
+        # Database settings
+        if "database" in yaml_data:
+            if "url" in yaml_data["database"]:
+                flattened["database_url"] = yaml_data["database"]["url"]
+
+        # Server settings
+        if "server" in yaml_data:
+            if "host" in yaml_data["server"]:
+                flattened["host"] = yaml_data["server"]["host"]
+            if "port" in yaml_data["server"]:
+                flattened["port"] = yaml_data["server"]["port"]
+            if "debug" in yaml_data["server"]:
+                flattened["debug"] = yaml_data["server"]["debug"]
+            if "log_level" in yaml_data["server"]:
+                flattened["log_level"] = yaml_data["server"]["log_level"]
+
+        # Token cache path
+        if "token_cache_path" in yaml_data:
+            flattened["token_cache_path"] = yaml_data["token_cache_path"]
+
+        return flattened
+
+    except yaml.YAMLError as e:
+        raise ValueError(f"Error parsing YAML configuration file {config_path}: {e}") from e
+    except Exception as e:
+        raise ValueError(f"Error loading configuration file {config_path}: {e}") from e
 
 
 class Settings(BaseSettings):
@@ -61,9 +150,9 @@ class Settings(BaseSettings):
 
     # Database Configuration
     database_url: str = Field(
-        default="sqlite:///./pyhdhrdvr.db",
+        default_factory=lambda: f"sqlite:///{get_database_file()}",
         description="Database connection URL",
-        examples=["sqlite:///./pyhdhrdvr.db", "postgresql://user:pass@localhost/pyhdhrdvr"],
+        examples=["sqlite:///~/.local/share/pydvr/pydvr.db", "postgresql://user:pass@localhost/pyhdhrdvr"],
     )
 
     # Recording Padding Defaults
@@ -106,7 +195,7 @@ class Settings(BaseSettings):
     )
 
     token_cache_path: Path = Field(
-        default=Path("./sd_token_cache.json"),
+        default_factory=get_token_cache_file,
         description="Path to Schedules Direct token cache file",
     )
 
@@ -204,24 +293,41 @@ class Settings(BaseSettings):
 _settings: Optional[Settings] = None
 
 
-def get_settings() -> Settings:
+def get_settings(config_path: Optional[Path] = None) -> Settings:
     """
     Get or create the global settings instance.
 
     This function implements lazy loading and provides a single point of access
     to application configuration (Dependency Inversion Principle).
 
+    Configuration is loaded in this priority order:
+    1. YAML file (~/.config/pydvr/config.yaml or specified path)
+    2. Environment variables
+    3. .env file (fallback for backwards compatibility, in current directory)
+
+    Args:
+        config_path: Optional path to YAML config file (default: ~/.config/pydvr/config.yaml)
+
     Returns:
         Settings: The global settings instance
 
     Example:
-        >>> from app.config import get_settings
+        >>> from pydvr.config import get_settings
         >>> settings = get_settings()
         >>> print(settings.hdhomerun_ip)
     """
     global _settings
     if _settings is None:
-        _settings = Settings()
+        # Load YAML config from user config directory
+        yaml_config = load_yaml_config(config_path)
+
+        # Create Settings instance
+        # Pydantic will merge: YAML values -> env vars -> .env file -> defaults
+        if yaml_config:
+            _settings = Settings(**yaml_config)
+        else:
+            _settings = Settings()
+
     return _settings
 
 

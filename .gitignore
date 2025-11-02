@@ -14,3 +14,8 @@ wheels/
 .env
 sd_token_cache.json
 test_recordings/
+config.yaml
+
+# Note: Logs, cache, and config are now stored in user directories:
+# - Linux/Mac: ~/.config/pydvr/, ~/.local/share/pydvr/, ~/.local/state/pydvr/, ~/.cache/pydvr/
+# - Windows: %APPDATA%/PyDVR/, %LOCALAPPDATA%/PyDVR/
