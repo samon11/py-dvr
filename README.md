@@ -71,7 +71,7 @@ pydvr server --port 9000
 pydvr server --reload
 
 # Access the web interface at:
-# http://localhost:8000
+# http://localhost:80
 ```
 
 ## Configuration
