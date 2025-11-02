@@ -80,7 +80,7 @@ async def lifespan(app: FastAPI):
     - Stops recording scheduler
     - Performs cleanup tasks
     """
-    from pydvr.database import SessionLocal
+    from pydvr.database import _get_session_factory
 
     # Startup
     logger.info(f"PyDVR starting on {settings.host}:{settings.port}")
@@ -97,7 +97,7 @@ async def lifespan(app: FastAPI):
     # This runs continuously, checking for upcoming recordings every 10 seconds
     import asyncio
 
-    asyncio.create_task(recording_scheduler.start(db_session_factory=SessionLocal))
+    asyncio.create_task(recording_scheduler.start(db_session_factory=_get_session_factory()))
     logger.info("Recording scheduler started - monitoring for upcoming recordings")
 
     yield

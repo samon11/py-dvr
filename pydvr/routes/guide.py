@@ -69,6 +69,22 @@ async def guide_page(
         # Get all enabled stations for the dropdown
         stations = db.query(Station).filter(Station.enabled).order_by(Station.channel_number).all()
 
+        # Sort stations by channel number (numeric sort)
+        # Channel numbers can be like "2.1", "44", etc.
+        def channel_sort_key(station: Station) -> tuple[float, str]:
+            """Extract numeric value from channel number for sorting.
+
+            Returns tuple of (numeric_value, original_string) to handle edge cases.
+            Examples: "2.1" -> (2.1, "2.1"), "44" -> (44.0, "44")
+            """
+            try:
+                return (float(station.channel_number), station.channel_number)
+            except ValueError:
+                # If channel number isn't numeric, sort to end
+                return (float('inf'), station.channel_number)
+
+        stations.sort(key=channel_sort_key)
+
         # Format stations for dropdown
         stations_list = _format_stations_for_dropdown(stations)
 
