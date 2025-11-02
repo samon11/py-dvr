@@ -56,7 +56,7 @@ pydvr server --port 9000
 pydvr server --reload
 
 # Access the web interface at:
-# http://localhost:80
+# http://YOUR_SERVER_IP:80
 ```
 
 ### 4. Add a Lineup and Sync Guide Data
