@@ -11,12 +11,15 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.dialects.sqlite import insert
 
+from sqlalchemy import delete, select
+
 from app.services.schedules_direct import SchedulesDirectClient
 from app.models.lineup import Lineup
 from app.models.station import Station
 from app.models.schedule import Schedule
 from app.models.program import Program
 from app.models.sync_status import SyncStatus
+from app.models.recording import Recording, RecordingStatus
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -45,7 +48,7 @@ class GuideDataSync:
         self.db = db
         self.client = SchedulesDirectClient()
 
-    async def sync_guide_data(self, days: int = 3) -> SyncStatus:
+    async def sync_guide_data(self, days: int = 7, cleanup: bool = True, keep_days: int = 7) -> SyncStatus:
         """Main sync method - syncs lineups, stations, schedules, programs.
 
         This is the primary entry point for guide data synchronization. It:
@@ -54,10 +57,13 @@ class GuideDataSync:
         3. Syncs stations for all lineups
         4. Syncs schedules for the next N days (with MD5 change detection)
         5. Syncs program metadata for all new/changed programs
-        6. Updates SyncStatus with results
+        6. Optionally cleans up old schedules and orphaned programs
+        7. Updates SyncStatus with results
 
         Args:
             days: Number of days of guide data to sync (default: 3)
+            cleanup: Whether to clean up old data after sync (default: True)
+            keep_days: Number of days of past data to keep (default: 7)
 
         Returns:
             SyncStatus record with sync results and statistics
@@ -119,7 +125,13 @@ class GuideDataSync:
             else:
                 logger.info("No programs to sync")
 
-            # 7. Mark complete
+            # 7. Cleanup old data (if enabled)
+            if cleanup:
+                logger.info("Running cleanup of old data...")
+                schedules_deleted, programs_deleted = await self.cleanup_old_data(keep_days)
+                logger.info(f"Cleanup deleted {schedules_deleted} schedules and {programs_deleted} programs")
+
+            # 8. Mark complete
             sync_status.status = "completed"
             sync_status.completed_at = datetime.now(timezone.utc)
             logger.info(f"Guide data sync completed successfully (sync_id={sync_status.id})")
@@ -440,3 +452,94 @@ class GuideDataSync:
 
         self.db.commit()
         return count
+
+    async def cleanup_old_data(self, keep_days: int = 7) -> tuple[int, int]:
+        """Clean up old schedules and orphaned programs.
+
+        Removes schedules that aired more than keep_days ago (unless they have
+        active recordings), and removes programs that have no remaining schedules.
+
+        Args:
+            keep_days: Number of days of past schedule data to keep (default: 7)
+
+        Returns:
+            Tuple of (schedules_deleted, programs_deleted)
+        """
+        logger.info(f"Starting cleanup of data older than {keep_days} days")
+
+        # Calculate cutoff date (keep_days ago from now)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=keep_days)
+        logger.info(f"Cutoff date: {cutoff_date}")
+
+        # 1. Delete old schedules (that don't have recordings)
+        schedules_deleted = await self._cleanup_old_schedules(cutoff_date)
+
+        # 2. Delete orphaned programs (no schedules)
+        programs_deleted = await self._cleanup_orphaned_programs()
+
+        logger.info(f"Cleanup complete: {schedules_deleted} schedules, {programs_deleted} programs deleted")
+        return schedules_deleted, programs_deleted
+
+    async def _cleanup_old_schedules(self, cutoff_date: datetime) -> int:
+        """Delete schedules older than cutoff_date.
+
+        Only deletes schedules that don't have associated recordings, to preserve
+        recording history.
+
+        Args:
+            cutoff_date: Delete schedules with air_datetime before this date
+
+        Returns:
+            Number of schedules deleted
+        """
+        # Find schedule IDs that are old AND don't have recordings
+        # We need to find schedules that are:
+        # 1. air_datetime < cutoff_date
+        # 2. NOT in the recordings table (no recording exists for this schedule)
+
+        # Subquery to get schedule_ids that have recordings
+        schedules_with_recordings = select(Recording.schedule_id).where(
+            Recording.status.in_([
+                RecordingStatus.SCHEDULED,
+                RecordingStatus.IN_PROGRESS,
+                RecordingStatus.COMPLETED
+            ])
+        )
+
+        # Delete old schedules that don't have recordings
+        delete_stmt = delete(Schedule).where(
+            Schedule.air_datetime < cutoff_date,
+            Schedule.id.not_in(schedules_with_recordings)
+        )
+
+        result = self.db.execute(delete_stmt)
+        self.db.commit()
+
+        deleted_count = result.rowcount
+        logger.info(f"Deleted {deleted_count} old schedules (before {cutoff_date})")
+        return deleted_count
+
+    async def _cleanup_orphaned_programs(self) -> int:
+        """Delete programs that have no schedules.
+
+        Programs without any schedules are no longer needed and can be removed
+        to save disk space.
+
+        Returns:
+            Number of programs deleted
+        """
+        # Find program IDs that have no schedules
+        # Subquery to get program_ids that have schedules
+        programs_with_schedules = select(Schedule.program_id).distinct()
+
+        # Delete programs that don't have schedules
+        delete_stmt = delete(Program).where(
+            Program.id.not_in(programs_with_schedules)
+        )
+
+        result = self.db.execute(delete_stmt)
+        self.db.commit()
+
+        deleted_count = result.rowcount
+        logger.info(f"Deleted {deleted_count} orphaned programs")
+        return deleted_count
