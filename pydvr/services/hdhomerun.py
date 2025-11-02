@@ -522,13 +522,16 @@ class HDHomeRunClient:
                     )
 
                     # Stream to file
+                    action = "Resuming" if resume_count > 0 else "Starting"
+                    attempt = f"{resume_count + 1}/{max_resume_attempts + 1}"
                     logger.info(
-                        f"{'Resuming' if resume_count > 0 else 'Starting'} stream from {stream_url} "
-                        f"(attempt {resume_count + 1}/{max_resume_attempts + 1})"
+                        f"{action} stream from {stream_url} (attempt {attempt})"
                     )
 
                     # Use the client's stream method with infinite timeout for streaming
-                    with self.client.stream("GET", stream_url, timeout=httpx.Timeout(None)) as response:
+                    with self.client.stream(
+                        "GET", stream_url, timeout=httpx.Timeout(None)
+                    ) as response:
                         response.raise_for_status()
 
                         with open(output_path, write_mode) as f:
@@ -560,15 +563,18 @@ class HDHomeRunClient:
 
                     if resume_count > max_resume_attempts:
                         logger.error(
-                            f"Stream interrupted and max resume attempts ({max_resume_attempts}) exceeded: {e}"
+                            f"Stream interrupted and max resume attempts "
+                            f"({max_resume_attempts}) exceeded: {e}"
                         )
                         raise HDHomeRunError(
                             f"Stream failed after {resume_count} resume attempts: {e}"
                         ) from e
 
+                    error_name = type(e).__name__
+                    attempt_info = f"{resume_count}/{max_resume_attempts}"
                     logger.warning(
-                        f"Stream interrupted ({type(e).__name__}: {e}), "
-                        f"resuming in {resume_delay}s (attempt {resume_count}/{max_resume_attempts})"
+                        f"Stream interrupted ({error_name}: {e}), "
+                        f"resuming in {resume_delay}s (attempt {attempt_info})"
                     )
 
                     # Switch to append mode for resume attempts

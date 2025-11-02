@@ -28,13 +28,14 @@ router = APIRouter()
 # Page Routes
 # ============================================================================
 
+
 @router.get("/guide", response_class=HTMLResponse, tags=["Navigation"])
 async def guide_page(
     request: Request,
     db: Session = Depends(get_db),
     station_id: str = Query(default=None, description="Station ID to display"),
     date: str = Query(default=None, description="Date to display (YYYY-MM-DD)"),
-    tz_offset: int = Query(default=0, description="Timezone offset in minutes from UTC")
+    tz_offset: int = Query(default=0, description="Timezone offset in minutes from UTC"),
 ) -> HTMLResponse:
     """
     Render the TV program guide page.
@@ -66,12 +67,7 @@ async def guide_page(
         today = datetime.utcnow().date().isoformat()
 
         # Get all enabled stations for the dropdown
-        stations = (
-            db.query(Station)
-            .filter(Station.enabled == True)
-            .order_by(Station.channel_number)
-            .all()
-        )
+        stations = db.query(Station).filter(Station.enabled).order_by(Station.channel_number).all()
 
         # Format stations for dropdown
         stations_list = _format_stations_for_dropdown(stations)
@@ -87,7 +83,7 @@ async def guide_page(
                     "selected_date": date,
                     "today_date": today,
                     "programs": [],
-                }
+                },
             )
 
         # Parse the date
@@ -105,7 +101,7 @@ async def guide_page(
                     "today_date": today,
                     "programs": [],
                     "error": "Invalid date format. Please use YYYY-MM-DD.",
-                }
+                },
             )
 
         # Calculate start and end times for the selected date in UTC
@@ -115,8 +111,10 @@ async def guide_page(
         #   - Positive values for west of UTC (e.g., 480 for PST/UTC-8, 300 for EST/UTC-5)
         #   - Negative values for east of UTC (e.g., -60 for CET/UTC+1, -540 for JST/UTC+9)
 
-        # We want to show programs that START during the selected calendar day in the user's local timezone
-        # Formula: UTC time = Local time + offset (because offset represents how far behind UTC we are)
+        # We want to show programs that START during the selected calendar day
+        # in the user's local timezone
+        # Formula: UTC time = Local time + offset
+        # (because offset represents how far behind UTC we are)
 
         # Example: User in PST (UTC-8) selects Nov 6
         # - tz_offset = 480 minutes (8 hours)
@@ -138,18 +136,16 @@ async def guide_page(
 
         # Query schedules for the selected station and date
         # Only show programs that haven't ended yet
-        # We'll filter in Python after the query since SQLite doesn't support datetime arithmetic easily
+        # We'll filter in Python after the query since SQLite doesn't support
+        # datetime arithmetic easily
         all_schedules = (
             db.query(Schedule)
-            .options(
-                joinedload(Schedule.program),
-                joinedload(Schedule.station)
-            )
+            .options(joinedload(Schedule.program), joinedload(Schedule.station))
             .filter(
                 and_(
                     Schedule.station_id == station_id,
                     Schedule.air_datetime >= start_time_utc,
-                    Schedule.air_datetime < end_time_utc
+                    Schedule.air_datetime < end_time_utc,
                 )
             )
             .order_by(Schedule.air_datetime)
@@ -159,8 +155,10 @@ async def guide_page(
         # Filter out programs that have already ended
         # A program has ended if: air_datetime + duration_seconds < current_time
         schedules = [
-            schedule for schedule in all_schedules
-            if schedule.air_datetime + timedelta(seconds=schedule.duration_seconds) >= current_time_utc
+            schedule
+            for schedule in all_schedules
+            if schedule.air_datetime + timedelta(seconds=schedule.duration_seconds)
+            >= current_time_utc
         ]
 
         logger.info(f"Found {len(schedules)} programs for station {station_id} on {date}")
@@ -172,7 +170,7 @@ async def guide_page(
             .filter(
                 and_(
                     Recording.schedule_id.in_(schedule_ids),
-                    Recording.status.in_([RecordingStatus.SCHEDULED, RecordingStatus.IN_PROGRESS])
+                    Recording.status.in_([RecordingStatus.SCHEDULED, RecordingStatus.IN_PROGRESS]),
                 )
             )
             .all()
@@ -191,7 +189,7 @@ async def guide_page(
                 "selected_date": date,
                 "today_date": today,
                 "programs": programs,
-            }
+            },
         )
     except Exception as e:
         logger.error(f"Error loading guide page: {e}", exc_info=True)
@@ -199,19 +197,22 @@ async def guide_page(
             "guide.html",
             {
                 "request": request,
-                "stations": stations_list if 'stations_list' in locals() else [],
+                "stations": stations_list if "stations_list" in locals() else [],
                 "selected_station_id": station_id,
                 "selected_date": date,
-                "today_date": today if 'today' in locals() else datetime.utcnow().date().isoformat(),
+                "today_date": today
+                if "today" in locals()
+                else datetime.utcnow().date().isoformat(),
                 "programs": [],
                 "error": "Failed to load guide data. Please try again later.",
-            }
+            },
         )
 
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def _format_stations_for_dropdown(stations: list[Station]) -> list[dict[str, Any]]:
     """
@@ -237,19 +238,23 @@ def _format_stations_for_dropdown(stations: list[Station]) -> list[dict[str, Any
 
         display_text = " - ".join(display_parts)
 
-        stations_list.append({
-            "id": station.id,
-            "channel_number": station.channel_number,
-            "name": station.name,
-            "callsign": station.callsign,
-            "affiliate": station.affiliate,
-            "display_text": display_text
-        })
+        stations_list.append(
+            {
+                "id": station.id,
+                "channel_number": station.channel_number,
+                "name": station.name,
+                "callsign": station.callsign,
+                "affiliate": station.affiliate,
+                "display_text": display_text,
+            }
+        )
 
     return stations_list
 
 
-def _format_programs_for_display(schedules: list[Schedule], scheduled_schedule_ids: set = None) -> list[dict[str, Any]]:
+def _format_programs_for_display(
+    schedules: list[Schedule], scheduled_schedule_ids: set = None
+) -> list[dict[str, Any]]:
     """
     Format schedules for template display.
 
@@ -273,27 +278,29 @@ def _format_programs_for_display(schedules: list[Schedule], scheduled_schedule_i
         # Format datetime as ISO string with Z suffix for UTC
         # Ensure proper UTC timezone indicator for JavaScript Date parsing
         air_datetime_str = schedule.air_datetime.isoformat()
-        if not air_datetime_str.endswith('Z') and '+' not in air_datetime_str:
-            air_datetime_str += 'Z'
+        if not air_datetime_str.endswith("Z") and "+" not in air_datetime_str:
+            air_datetime_str += "Z"
 
         # Check if this program is already scheduled for recording
         is_scheduled = schedule.id in scheduled_schedule_ids
 
         # Add program to list
-        programs.append({
-            "schedule_id": schedule.id,
-            "air_datetime_utc": air_datetime_str,  # ISO format with Z for JavaScript
-            "duration_minutes": duration_minutes,
-            "title": program.title,
-            "description": program.description or "No description available.",
-            "episode_title": None,  # MVP: No episode data yet
-            "season_number": None,
-            "episode_number": None,
-            "is_new": False,  # MVP: No flags yet
-            "is_live": False,
-            "original_air_date": None,
-            "genres": [],  # MVP: No genre data yet
-            "is_scheduled": is_scheduled,
-        })
+        programs.append(
+            {
+                "schedule_id": schedule.id,
+                "air_datetime_utc": air_datetime_str,  # ISO format with Z for JavaScript
+                "duration_minutes": duration_minutes,
+                "title": program.title,
+                "description": program.description or "No description available.",
+                "episode_title": None,  # MVP: No episode data yet
+                "season_number": None,
+                "episode_number": None,
+                "is_new": False,  # MVP: No flags yet
+                "is_live": False,
+                "original_air_date": None,
+                "genres": [],  # MVP: No genre data yet
+                "is_scheduled": is_scheduled,
+            }
+        )
 
     return programs

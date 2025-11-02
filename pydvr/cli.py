@@ -3,6 +3,7 @@
 This module provides CLI commands for managing the DVR system,
 including manual guide data synchronization and other administrative tasks.
 """
+
 import sys
 from pathlib import Path
 
@@ -87,7 +88,9 @@ def setup():
     click.echo("Specify where recordings should be saved.")
     click.echo("The directory will be created if it doesn't exist.")
     default_recording_path = str(Path.home() / "PyDVR-Recordings")
-    recording_path = click.prompt("Recording directory path", type=str, default=default_recording_path)
+    recording_path = click.prompt(
+        "Recording directory path", type=str, default=default_recording_path
+    )
 
     # Try to create the recording directory
     try:
@@ -106,24 +109,14 @@ def setup():
 
         # Database URL
         database_url = click.prompt(
-            "Database URL (leave default for SQLite)",
-            type=str,
-            default="default"
+            "Database URL (leave default for SQLite)", type=str, default="default"
         )
         if database_url != "default":
             config["database"] = {"url": database_url}
 
         # Padding settings
-        padding_start = click.prompt(
-            "Seconds to start recording early",
-            type=int,
-            default=60
-        )
-        padding_end = click.prompt(
-            "Seconds to continue recording late",
-            type=int,
-            default=120
-        )
+        padding_start = click.prompt("Seconds to start recording early", type=int, default=60)
+        padding_end = click.prompt("Seconds to continue recording late", type=int, default=120)
         config["recording"]["padding_start"] = padding_start
         config["recording"]["padding_end"] = padding_end
 
@@ -133,16 +126,13 @@ def setup():
         debug = click.confirm("Enable debug mode?", default=False)
         log_level = click.prompt(
             "Log level",
-            type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False),
-            default="INFO"
+            type=click.Choice(
+                ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
+            ),
+            default="INFO",
         )
 
-        config["server"] = {
-            "host": host,
-            "port": port,
-            "debug": debug,
-            "log_level": log_level
-        }
+        config["server"] = {"host": host, "port": port, "debug": debug, "log_level": log_level}
         click.echo()
 
     # Write config.yaml file
@@ -209,7 +199,6 @@ def paths():
     print_paths()
 
 
-
 @cli.command()
 @click.option("--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)")
 @click.option("--port", default=80, help="Port to bind to (default: 80)")
@@ -231,18 +220,15 @@ def server(host: str, port: int, reload: bool):
     if reload:
         click.echo(click.style("Auto-reload enabled (development mode)", fg="yellow"))
 
-    uvicorn.run(
-        "pydvr.main:app",
-        host=host,
-        port=port,
-        reload=reload
-    )
+    uvicorn.run("pydvr.main:app", host=host, port=port, reload=reload)
 
 
 @cli.command()
 @click.option("--days", default=7, help="Number of days to sync (default: 7)")
 @click.option("--no-cleanup", is_flag=True, help="Skip cleanup of old data")
-@click.option("--keep-days", default=7, help="Days of past data to keep during cleanup (default: 7)")
+@click.option(
+    "--keep-days", default=7, help="Days of past data to keep during cleanup (default: 7)"
+)
 def sync_guide(days: int, no_cleanup: bool, keep_days: int):
     """Manually trigger guide data sync.
 
@@ -279,7 +265,9 @@ def sync_guide(days: int, no_cleanup: bool, keep_days: int):
     db = next(get_db())
     try:
         sync = GuideDataSync(db)
-        result = asyncio.run(sync.sync_guide_data(days=days, cleanup=not no_cleanup, keep_days=keep_days))
+        result = asyncio.run(
+            sync.sync_guide_data(days=days, cleanup=not no_cleanup, keep_days=keep_days)
+        )
 
         if result.status == "completed":
             click.echo(click.style("Sync completed successfully!", fg="green"))

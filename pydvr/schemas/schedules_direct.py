@@ -18,13 +18,14 @@ class SDErrorData(BaseModel):
     stationID: str | None = None
     retryTime: datetime | None = Field(default=None)
 
-    @field_validator('timestamp', 'retryTime', mode='before')
+    @field_validator("timestamp", "retryTime", mode="before")
     @classmethod
     def parse_datetime_string(cls, value: Any) -> datetime | None:
         if isinstance(value, str):
             # Assuming the string is in ISO 8601 format with 'Z' for UTC
-            return datetime.fromisoformat(value.replace('Z', '+00:00'))
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
         return value
+
 
 class SDError(Exception):
     def __init__(self, data: SDErrorData):
@@ -228,7 +229,7 @@ class ProgramMetadataEntry(BaseModel):
     episode: int | None = None
     totalEpisodes: int | None = None
     totalSeasons: int | None = None
-    url: str | None = None # For TVmaze
+    url: str | None = None  # For TVmaze
 
 
 class ProgramMetadata(BaseModel):
@@ -299,7 +300,7 @@ class ProgramResponse(BaseModel):
     movie: MovieInfo | None = None
     officialURL: str | None = None
     multiPart: MultiPart | None = None
-    eventDetails: dict[str, Any] | None = None # Too complex to model fully for now
+    eventDetails: dict[str, Any] | None = None  # Too complex to model fully for now
 
 
 class ProgramsResponse(RootModel[list[ProgramResponse]]):

@@ -48,10 +48,7 @@ class Station(Base):
 
     # Override id to use string station_id from Schedules Direct
     id: Mapped[str] = mapped_column(
-        "station_id",
-        String(32),
-        primary_key=True,
-        doc="Schedules Direct station ID"
+        "station_id", String(32), primary_key=True, doc="Schedules Direct station ID"
     )
 
     # Foreign key to lineup
@@ -60,40 +57,28 @@ class Station(Base):
         ForeignKey("lineups.lineup_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        doc="Reference to lineups table"
+        doc="Reference to lineups table",
     )
 
     # Core station identification
-    callsign: Mapped[str] = mapped_column(
-        String(16),
-        nullable=False,
-        doc="FCC station call sign"
-    )
+    callsign: Mapped[str] = mapped_column(String(16), nullable=False, doc="FCC station call sign")
 
     channel_number: Mapped[str] = mapped_column(
         String(16),
         nullable=False,
         index=True,
-        doc="Channel number (supports subchannels like '2.1')"
+        doc="Channel number (supports subchannels like '2.1')",
     )
 
-    name: Mapped[str] = mapped_column(
-        String(128),
-        nullable=False,
-        doc="Station display name"
-    )
+    name: Mapped[str] = mapped_column(String(128), nullable=False, doc="Station display name")
 
     # Additional metadata
     affiliate: Mapped[str | None] = mapped_column(
-        String(32),
-        nullable=True,
-        doc="Network affiliation (NBC, CBS, FOX, etc.)"
+        String(32), nullable=True, doc="Network affiliation (NBC, CBS, FOX, etc.)"
     )
 
     logo_url: Mapped[str | None] = mapped_column(
-        String(512),
-        nullable=True,
-        doc="URL to station logo image"
+        String(512), nullable=True, doc="URL to station logo image"
     )
 
     enabled: Mapped[bool] = mapped_column(
@@ -101,21 +86,19 @@ class Station(Base):
         nullable=False,
         default=True,
         index=True,
-        doc="Whether station is enabled for display"
+        doc="Whether station is enabled for display",
     )
 
     # Relationships
     lineup: Mapped["Lineup"] = relationship(
-        "Lineup",
-        back_populates="stations",
-        doc="The lineup this station belongs to"
+        "Lineup", back_populates="stations", doc="The lineup this station belongs to"
     )
 
     schedules: Mapped[list["Schedule"]] = relationship(
         "Schedule",
         back_populates="station",
         cascade="all, delete-orphan",
-        doc="Program schedules for this station"
+        doc="Program schedules for this station",
     )
 
     # Constraints
@@ -129,4 +112,6 @@ class Station(Base):
         Returns:
             String in format: Station(id='12345', callsign='KTVU', channel='2.1')
         """
-        return f"Station(id='{self.id}', callsign='{self.callsign}', channel='{self.channel_number}')"
+        return (
+            f"Station(id='{self.id}', callsign='{self.callsign}', channel='{self.channel_number}')"
+        )

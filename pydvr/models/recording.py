@@ -91,7 +91,7 @@ class Recording(Base):
         Integer,
         primary_key=True,
         autoincrement=True,
-        doc="Unique recording identifier"
+        doc="Unique recording identifier",
     )
 
     # Foreign key
@@ -100,7 +100,7 @@ class Recording(Base):
         ForeignKey("schedules.schedule_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        doc="Reference to schedules table"
+        doc="Reference to schedules table",
     )
 
     # Recording state
@@ -109,62 +109,44 @@ class Recording(Base):
         nullable=False,
         index=True,
         default=RecordingStatus.SCHEDULED,
-        doc="Current recording status"
+        doc="Current recording status",
     )
 
     # Padding configuration
     padding_start_seconds: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=60,
-        doc="Seconds to start recording early"
+        Integer, nullable=False, default=60, doc="Seconds to start recording early"
     )
 
     padding_end_seconds: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=120,
-        doc="Seconds to continue recording late"
+        Integer, nullable=False, default=120, doc="Seconds to continue recording late"
     )
 
     # File information
     file_path: Mapped[str | None] = mapped_column(
-        String(1024),
-        nullable=True,
-        doc="Absolute path to recorded .ts file"
+        String(1024), nullable=True, doc="Absolute path to recorded .ts file"
     )
 
     # Execution timing
     actual_start_time: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-        doc="When recording actually started (UTC)"
+        DateTime(timezone=True), nullable=True, doc="When recording actually started (UTC)"
     )
 
     actual_end_time: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-        doc="When recording actually ended (UTC)"
+        DateTime(timezone=True), nullable=True, doc="When recording actually ended (UTC)"
     )
 
     # Error tracking
     error_message: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-        doc="Error description if recording failed"
+        Text, nullable=True, doc="Error description if recording failed"
     )
 
     # Relationships
     schedule: Mapped["Schedule"] = relationship(
-        "Schedule",
-        back_populates="recordings",
-        doc="The scheduled airing being recorded"
+        "Schedule", back_populates="recordings", doc="The scheduled airing being recorded"
     )
 
     # Indexes
-    __table_args__ = (
-        Index("ix_recording_status_schedule", "status", "schedule_id"),
-    )
+    __table_args__ = (Index("ix_recording_status_schedule", "status", "schedule_id"),)
 
     def __repr__(self) -> str:
         """Return string representation with recording details.
@@ -172,7 +154,11 @@ class Recording(Base):
         Returns:
             String in format: Recording(id=123, status='scheduled', schedule='...')
         """
-        return f"Recording(id={self.id}, status='{self.status.value}', schedule='{self.schedule_id[:20]}...')"
+        schedule_preview = self.schedule_id[:20] if self.schedule_id else "None"
+        return (
+            f"Recording(id={self.id}, status='{self.status.value}', "
+            f"schedule='{schedule_preview}...')"
+        )
 
     @property
     def file_path_obj(self) -> Path | None:

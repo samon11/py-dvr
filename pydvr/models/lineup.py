@@ -40,42 +40,26 @@ class Lineup(Base):
 
     # Override id to use string lineup_id from Schedules Direct
     id: Mapped[str] = mapped_column(
-        "lineup_id",
-        String(64),
-        primary_key=True,
-        doc="Schedules Direct lineup ID"
+        "lineup_id", String(64), primary_key=True, doc="Schedules Direct lineup ID"
     )
 
     # Core lineup metadata
-    name: Mapped[str] = mapped_column(
-        String(256),
-        nullable=False,
-        doc="Human-readable lineup name"
-    )
+    name: Mapped[str] = mapped_column(String(256), nullable=False, doc="Human-readable lineup name")
 
     transport: Mapped[str | None] = mapped_column(
-        String(32),
-        nullable=True,
-        doc="Transport method (Cable, Satellite, Antenna, etc.)"
+        String(32), nullable=True, doc="Transport method (Cable, Satellite, Antenna, etc.)"
     )
 
     location: Mapped[str | None] = mapped_column(
-        String(32),
-        nullable=True,
-        doc="ZIP code or location identifier"
+        String(32), nullable=True, doc="ZIP code or location identifier"
     )
 
     modified: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-        doc="Last modified timestamp from Schedules Direct"
+        DateTime(timezone=True), nullable=True, doc="Last modified timestamp from Schedules Direct"
     )
 
     is_deleted: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=False,
-        doc="Soft delete flag for removed lineups"
+        Boolean, nullable=False, default=False, doc="Soft delete flag for removed lineups"
     )
 
     # Relationships
@@ -83,7 +67,7 @@ class Lineup(Base):
         "Station",
         back_populates="lineup",
         cascade="all, delete-orphan",
-        doc="Stations in this lineup"
+        doc="Stations in this lineup",
     )
 
     def __repr__(self) -> str:

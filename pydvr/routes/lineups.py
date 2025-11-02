@@ -25,6 +25,7 @@ router = APIRouter()
 # Page Routes
 # ============================================================================
 
+
 @router.get("/lineups", response_class=HTMLResponse, tags=["Navigation"])
 async def lineups_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     """
@@ -55,7 +56,7 @@ async def lineups_page(request: Request, db: Session = Depends(get_db)) -> HTMLR
             {
                 "request": request,
                 "lineups": lineups,
-            }
+            },
         )
     except Exception as e:
         logger.error(f"Error loading lineups page: {e}", exc_info=True)
@@ -65,13 +66,14 @@ async def lineups_page(request: Request, db: Session = Depends(get_db)) -> HTMLR
                 "request": request,
                 "lineups": [],
                 "error": str(e),
-            }
+            },
         )
 
 
 # ============================================================================
 # API Routes
 # ============================================================================
+
 
 @router.get("/api/lineups", tags=["Lineups"])
 async def get_lineups(db: Session = Depends(get_db)) -> JSONResponse:
@@ -126,7 +128,7 @@ async def get_lineups(db: Session = Depends(get_db)) -> JSONResponse:
 async def search_headends(
     country: str = Query(..., description="Country code (e.g., 'USA')"),
     postal_code: str = Query(..., description="Postal/ZIP code"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> JSONResponse:
     """
     Search for available headends by location.
@@ -177,10 +179,7 @@ async def search_headends(
 
 
 @router.post("/api/lineups/{lineup_id}", tags=["Lineups"])
-async def add_lineup(
-    lineup_id: str,
-    db: Session = Depends(get_db)
-) -> JSONResponse:
+async def add_lineup(lineup_id: str, db: Session = Depends(get_db)) -> JSONResponse:
     """
     Add a lineup to the user's Schedules Direct account.
 
@@ -218,10 +217,7 @@ async def add_lineup(
 
 
 @router.delete("/api/lineups/{lineup_id}", tags=["Lineups"])
-async def delete_lineup(
-    lineup_id: str,
-    db: Session = Depends(get_db)
-) -> JSONResponse:
+async def delete_lineup(lineup_id: str, db: Session = Depends(get_db)) -> JSONResponse:
     """
     Delete a lineup from the user's Schedules Direct account.
 

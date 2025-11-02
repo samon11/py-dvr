@@ -141,7 +141,7 @@ class RecordingScheduler:
             .join(Schedule)
             .options(
                 joinedload(Recording.schedule).joinedload(Schedule.program),
-                joinedload(Recording.schedule).joinedload(Schedule.station)
+                joinedload(Recording.schedule).joinedload(Schedule.station),
             )
             .where(Recording.status == RecordingStatus.SCHEDULED)
             .where(Schedule.air_datetime <= lookahead)
@@ -165,7 +165,7 @@ class RecordingScheduler:
             if air_dt.tzinfo is None:
                 air_dt = air_dt.replace(tzinfo=UTC)
 
-            start_time = (air_dt - timedelta(seconds=recording.padding_start_seconds))
+            start_time = air_dt - timedelta(seconds=recording.padding_start_seconds)
 
             # Check if it's time to start this recording
             if start_time <= now:
@@ -183,7 +183,9 @@ class RecordingScheduler:
                     self._active_recordings[recording.id] = task
 
                     # Cleanup completed tasks
-                    task.add_done_callback(lambda t, rid=recording.id: self._active_recordings.pop(rid, None))
+                    task.add_done_callback(
+                        lambda t, rid=recording.id: self._active_recordings.pop(rid, None)
+                    )
             else:
                 time_until = (start_time - now).total_seconds()
                 logger.debug(
@@ -293,7 +295,7 @@ class RecordingScheduler:
                 error_msg = f"Unexpected error: {e}"
                 logger.error(
                     f"Recording {recording_id} failed with unexpected error: {error_msg}",
-                    exc_info=True
+                    exc_info=True,
                 )
 
                 end_time = datetime.now(UTC)
@@ -301,10 +303,7 @@ class RecordingScheduler:
                 db.commit()
 
         except Exception as e:
-            logger.error(
-                f"Fatal error executing recording {recording_id}: {e}",
-                exc_info=True
-            )
+            logger.error(f"Fatal error executing recording {recording_id}: {e}", exc_info=True)
 
         finally:
             db.close()
@@ -429,10 +428,10 @@ class RecordingScheduler:
         """
         # Replace invalid characters with underscore
         # Invalid chars: / \ : * ? " < > |
-        sanitized = re.sub(r'[/\\:*?"<>|]', '_', filename)
+        sanitized = re.sub(r'[/\\:*?"<>|]', "_", filename)
 
         # Remove leading/trailing spaces and periods
-        sanitized = sanitized.strip('. ')
+        sanitized = sanitized.strip(". ")
 
         # Limit length to 200 characters (leaving room for date/extension)
         if len(sanitized) > 200:

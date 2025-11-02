@@ -8,14 +8,14 @@ This test verifies that:
 5. Indexes are created properly
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 from sqlalchemy import inspect
 
 from pydvr.db import DatabaseManager
-from pydvr.models import Base, Program, Recording, RecordingStatus, Schedule, Station
+from pydvr.models import Program, Recording, RecordingStatus, Schedule, Station
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ def test_station_model(db_manager):
             callsign="KTVU",
             channel_number="2.1",
             name="FOX 2 Oakland",
-            enabled=True
+            enabled=True,
         )
         session.add(station)
         session.commit()
@@ -69,7 +69,7 @@ def test_program_model(db_manager):
             id="EP012345678",
             title="NOVA",
             description="Science documentary series",
-            duration_seconds=3600
+            duration_seconds=3600,
         )
         session.add(program)
         session.commit()
@@ -91,26 +91,23 @@ def test_schedule_model_with_relationships(db_manager):
             callsign="WGBH",
             channel_number="2.1",
             name="WGBH Boston",
-            enabled=True
+            enabled=True,
         )
         program = Program(
-            id="EP012345678",
-            title="NOVA",
-            description="Science documentary",
-            duration_seconds=3600
+            id="EP012345678", title="NOVA", description="Science documentary", duration_seconds=3600
         )
         session.add(station)
         session.add(program)
         session.commit()
 
         # Create schedule
-        air_time = datetime(2025, 10, 31, 20, 0, 0, tzinfo=timezone.utc)
+        air_time = datetime(2025, 10, 31, 20, 0, 0, tzinfo=UTC)
         schedule = Schedule(
             id="12345.schedulesdirect.org_2025-10-31T20:00:00Z_EP012345678",
             program_id=program.id,
             station_id=station.id,
             air_datetime=air_time,
-            duration_seconds=3600
+            duration_seconds=3600,
         )
         session.add(schedule)
         session.commit()
@@ -121,7 +118,7 @@ def test_schedule_model_with_relationships(db_manager):
         assert retrieved.program.title == "NOVA"
         assert retrieved.station.callsign == "WGBH"
         # Note: SQLite doesn't preserve timezone info, so we compare without tzinfo
-        assert retrieved.air_datetime.replace(tzinfo=timezone.utc) == air_time
+        assert retrieved.air_datetime.replace(tzinfo=UTC) == air_time
 
 
 def test_recording_model_with_enum(db_manager):
@@ -133,20 +130,17 @@ def test_recording_model_with_enum(db_manager):
             callsign="KTVU",
             channel_number="2.1",
             name="FOX 2",
-            enabled=True
+            enabled=True,
         )
         program = Program(
-            id="EP012345678",
-            title="Test Show",
-            description="Test",
-            duration_seconds=1800
+            id="EP012345678", title="Test Show", description="Test", duration_seconds=1800
         )
         schedule = Schedule(
             id="test_schedule_id",
             program_id=program.id,
             station_id=station.id,
-            air_datetime=datetime.now(timezone.utc),
-            duration_seconds=1800
+            air_datetime=datetime.now(UTC),
+            duration_seconds=1800,
         )
         session.add_all([station, program, schedule])
         session.commit()
@@ -156,7 +150,7 @@ def test_recording_model_with_enum(db_manager):
             schedule_id=schedule.id,
             status=RecordingStatus.SCHEDULED,
             padding_start_seconds=60,
-            padding_end_seconds=120
+            padding_end_seconds=120,
         )
         session.add(recording)
         session.commit()
@@ -180,37 +174,34 @@ def test_recording_state_transitions(db_manager):
             callsign="KTVU",
             channel_number="2.1",
             name="FOX 2",
-            enabled=True
+            enabled=True,
         )
         program = Program(
-            id="EP012345678",
-            title="Test Show",
-            description="Test",
-            duration_seconds=1800
+            id="EP012345678", title="Test Show", description="Test", duration_seconds=1800
         )
         schedule = Schedule(
             id="test_schedule_id",
             program_id=program.id,
             station_id=station.id,
-            air_datetime=datetime.now(timezone.utc),
-            duration_seconds=1800
+            air_datetime=datetime.now(UTC),
+            duration_seconds=1800,
         )
         recording = Recording(
             schedule_id=schedule.id,
             status=RecordingStatus.SCHEDULED,
             padding_start_seconds=60,
-            padding_end_seconds=120
+            padding_end_seconds=120,
         )
         session.add_all([station, program, schedule, recording])
         session.commit()
 
         # Test state transitions
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
         recording.mark_in_progress(start_time)
         assert recording.status == RecordingStatus.IN_PROGRESS
         assert recording.actual_start_time == start_time
 
-        end_time = datetime.now(timezone.utc)
+        end_time = datetime.now(UTC)
         file_path = Path("/recordings/test.ts")
         recording.mark_completed(end_time, file_path)
         assert recording.status == RecordingStatus.COMPLETED
@@ -227,26 +218,23 @@ def test_cascade_delete(db_manager):
             callsign="KTVU",
             channel_number="2.1",
             name="FOX 2",
-            enabled=True
+            enabled=True,
         )
         program = Program(
-            id="EP012345678",
-            title="Test Show",
-            description="Test",
-            duration_seconds=1800
+            id="EP012345678", title="Test Show", description="Test", duration_seconds=1800
         )
         schedule = Schedule(
             id="test_schedule_id",
             program_id=program.id,
             station_id=station.id,
-            air_datetime=datetime.now(timezone.utc),
-            duration_seconds=1800
+            air_datetime=datetime.now(UTC),
+            duration_seconds=1800,
         )
         recording = Recording(
             schedule_id=schedule.id,
             status=RecordingStatus.SCHEDULED,
             padding_start_seconds=60,
-            padding_end_seconds=120
+            padding_end_seconds=120,
         )
         session.add_all([station, program, schedule, recording])
         session.commit()
@@ -273,7 +261,7 @@ def test_unique_constraints(db_manager):
             callsign="KTVU",
             channel_number="2.1",
             name="FOX 2",
-            enabled=True
+            enabled=True,
         )
         session.add(station1)
         session.commit()
@@ -288,7 +276,7 @@ def test_unique_constraints(db_manager):
                 callsign="KTVU",
                 channel_number="2.1",
                 name="FOX 2 Duplicate",
-                enabled=True
+                enabled=True,
             )
             session.add(station2)
             session.commit()

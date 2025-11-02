@@ -47,7 +47,9 @@ class GuideDataSync:
         self.db = db
         self.client = SchedulesDirectClient()
 
-    async def sync_guide_data(self, days: int = 7, cleanup: bool = True, keep_days: int = 7) -> SyncStatus:
+    async def sync_guide_data(
+        self, days: int = 7, cleanup: bool = True, keep_days: int = 7
+    ) -> SyncStatus:
         """Main sync method - syncs lineups, stations, schedules, programs.
 
         This is the primary entry point for guide data synchronization. It:
@@ -86,7 +88,7 @@ class GuideDataSync:
             logger.info(f"Synced {lineups_count} lineups")
 
             # 3. Get all station IDs from active lineups
-            stations = self.db.query(Station).filter(Station.enabled == True).all()
+            stations = self.db.query(Station).filter(Station.enabled).all()
             station_ids = [s.id for s in stations]
             logger.info(f"Found {len(station_ids)} enabled stations")
 
@@ -99,20 +101,18 @@ class GuideDataSync:
 
             # 4. Generate date list (YYYY-MM-DD format)
             dates = [
-                (datetime.now(UTC) + timedelta(days=i)).strftime("%Y-%m-%d")
-                for i in range(days)
+                (datetime.now(UTC) + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)
             ]
             logger.info(f"Syncing schedules for dates: {dates}")
 
             # 5. Sync schedules (with MD5 change detection)
             logger.info("Syncing schedules...")
-            schedules_count, program_ids = await self._sync_schedules(
-                station_ids,
-                dates
-            )
+            schedules_count, program_ids = await self._sync_schedules(station_ids, dates)
             sync_status.schedules_updated = schedules_count
             self.db.commit()
-            logger.info(f"Synced {schedules_count} schedules, found {len(program_ids)} unique programs")
+            logger.info(
+                f"Synced {schedules_count} schedules, found {len(program_ids)} unique programs"
+            )
 
             # 6. Sync programs
             if program_ids:
@@ -128,7 +128,9 @@ class GuideDataSync:
             if cleanup:
                 logger.info("Running cleanup of old data...")
                 schedules_deleted, programs_deleted = await self.cleanup_old_data(keep_days)
-                logger.info(f"Cleanup deleted {schedules_deleted} schedules and {programs_deleted} programs")
+                logger.info(
+                    f"Cleanup deleted {schedules_deleted} schedules and {programs_deleted} programs"
+                )
 
             # 8. Mark complete
             sync_status.status = "completed"
@@ -168,7 +170,7 @@ class GuideDataSync:
                 name=lineup_data.name,
                 transport=lineup_data.transport,
                 location=lineup_data.location,
-                modified=datetime.now(UTC)
+                modified=datetime.now(UTC),
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["lineup_id"],
@@ -177,8 +179,8 @@ class GuideDataSync:
                     "transport": lineup_data.transport,
                     "location": lineup_data.location,
                     "modified": datetime.now(UTC),
-                    "is_deleted": False
-                }
+                    "is_deleted": False,
+                },
             )
             self.db.execute(stmt)
             count += 1
@@ -206,10 +208,7 @@ class GuideDataSync:
         lineup_response = await self.client.get_lineup_stations(lineup_id)
 
         # Build a mapping of stationID -> channel from the map array
-        station_channel_map = {
-            entry.stationID: entry.channel
-            for entry in lineup_response.map
-        }
+        station_channel_map = {entry.stationID: entry.channel for entry in lineup_response.map}
 
         count = 0
         for station_data in lineup_response.stations:
@@ -224,7 +223,7 @@ class GuideDataSync:
                 channel_number=channel_number,
                 name=station_data.name,
                 affiliate=station_data.affiliate,
-                logo_url=station_data.logo.URL if station_data.logo else None
+                logo_url=station_data.logo.URL if station_data.logo else None,
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["station_id"],
@@ -234,8 +233,8 @@ class GuideDataSync:
                     "channel_number": channel_number,
                     "name": station_data.name,
                     "affiliate": station_data.affiliate,
-                    "logo_url": station_data.logo.URL if station_data.logo else None
-                }
+                    "logo_url": station_data.logo.URL if station_data.logo else None,
+                },
             )
             self.db.execute(stmt)
             count += 1
@@ -244,9 +243,7 @@ class GuideDataSync:
         return count
 
     async def _sync_schedules(
-        self,
-        station_ids: list[str],
-        dates: list[str]
+        self, station_ids: list[str], dates: list[str]
     ) -> tuple[int, set[str]]:
         """Sync schedules, return (count, program_ids).
 
@@ -269,11 +266,15 @@ class GuideDataSync:
         date_start = datetime.strptime(dates[0], "%Y-%m-%d").replace(tzinfo=UTC)
         date_end = datetime.strptime(dates[-1], "%Y-%m-%d").replace(tzinfo=UTC) + timedelta(days=1)
 
-        existing_schedules = self.db.query(Schedule).filter(
-            Schedule.station_id.in_(station_ids),
-            Schedule.air_datetime >= date_start,
-            Schedule.air_datetime < date_end
-        ).all()
+        existing_schedules = (
+            self.db.query(Schedule)
+            .filter(
+                Schedule.station_id.in_(station_ids),
+                Schedule.air_datetime >= date_start,
+                Schedule.air_datetime < date_end,
+            )
+            .all()
+        )
 
         # Build map of existing MD5 hashes
         existing_md5s = {
@@ -315,8 +316,10 @@ class GuideDataSync:
         # Process in batches of 5000
         batch_size = 5000
         for i in range(0, len(stations_to_fetch), batch_size):
-            batch = stations_to_fetch[i:i + batch_size]
-            logger.debug(f"Fetching schedules batch {i//batch_size + 1} ({len(batch)} station-dates)")
+            batch = stations_to_fetch[i : i + batch_size]
+            logger.debug(
+                f"Fetching schedules batch {i // batch_size + 1} ({len(batch)} station-dates)"
+            )
 
             # Build request format: [{"stationID": "12345", "date": ["2025-01-01"]}]
             # Group by station ID
@@ -350,15 +353,15 @@ class GuideDataSync:
                         program_id=program.programID,
                         air_datetime=air_dt,
                         duration_seconds=program.duration,
-                        md5_hash=program.md5
+                        md5_hash=program.md5,
                     )
                     stmt = stmt.on_conflict_do_update(
                         index_elements=["schedule_id"],
                         set_={
                             "program_id": program.programID,
                             "duration_seconds": program.duration,
-                            "md5_hash": program.md5
-                        }
+                            "md5_hash": program.md5,
+                        },
                     )
                     self.db.execute(stmt)
                     program_ids.add(program.programID)
@@ -384,8 +387,8 @@ class GuideDataSync:
 
         # Process in batches of 5000
         for i in range(0, len(program_ids), batch_size):
-            batch = program_ids[i:i + batch_size]
-            logger.debug(f"Fetching programs batch {i//batch_size + 1} ({len(batch)} programs)")
+            batch = program_ids[i : i + batch_size]
+            logger.debug(f"Fetching programs batch {i // batch_size + 1} ({len(batch)} programs)")
 
             programs_response = await self.client.get_programs(batch)
 
@@ -430,21 +433,24 @@ class GuideDataSync:
                     id=program_data.programID,
                     title=program_data.titles[0].title120 if program_data.titles else "Unknown",
                     description=description,
-                    duration_seconds=program_data.duration or 3600,  # Default 1 hour if not provided
+                    duration_seconds=program_data.duration
+                    or 3600,  # Default 1 hour if not provided
                     season=season,
                     episode=episode,
-                    episode_title=episode_title
+                    episode_title=episode_title,
                 )
                 stmt = stmt.on_conflict_do_update(
                     index_elements=["program_id"],
                     set_={
-                        "title": program_data.titles[0].title120 if program_data.titles else "Unknown",
+                        "title": program_data.titles[0].title120
+                        if program_data.titles
+                        else "Unknown",
                         "description": description,
                         "duration_seconds": program_data.duration or 3600,
                         "season": season,
                         "episode": episode,
-                        "episode_title": episode_title
-                    }
+                        "episode_title": episode_title,
+                    },
                 )
                 self.db.execute(stmt)
                 count += 1
@@ -476,7 +482,9 @@ class GuideDataSync:
         # 2. Delete orphaned programs (no schedules)
         programs_deleted = await self._cleanup_orphaned_programs()
 
-        logger.info(f"Cleanup complete: {schedules_deleted} schedules, {programs_deleted} programs deleted")
+        logger.info(
+            f"Cleanup complete: {schedules_deleted} schedules, {programs_deleted} programs deleted"
+        )
         return schedules_deleted, programs_deleted
 
     async def _cleanup_old_schedules(self, cutoff_date: datetime) -> int:
@@ -498,17 +506,14 @@ class GuideDataSync:
 
         # Subquery to get schedule_ids that have recordings
         schedules_with_recordings = select(Recording.schedule_id).where(
-            Recording.status.in_([
-                RecordingStatus.SCHEDULED,
-                RecordingStatus.IN_PROGRESS,
-                RecordingStatus.COMPLETED
-            ])
+            Recording.status.in_(
+                [RecordingStatus.SCHEDULED, RecordingStatus.IN_PROGRESS, RecordingStatus.COMPLETED]
+            )
         )
 
         # Delete old schedules that don't have recordings
         delete_stmt = delete(Schedule).where(
-            Schedule.air_datetime < cutoff_date,
-            Schedule.id.not_in(schedules_with_recordings)
+            Schedule.air_datetime < cutoff_date, Schedule.id.not_in(schedules_with_recordings)
         )
 
         result = self.db.execute(delete_stmt)
@@ -532,9 +537,7 @@ class GuideDataSync:
         programs_with_schedules = select(Schedule.program_id).distinct()
 
         # Delete programs that don't have schedules
-        delete_stmt = delete(Program).where(
-            Program.id.not_in(programs_with_schedules)
-        )
+        delete_stmt = delete(Program).where(Program.id.not_in(programs_with_schedules))
 
         result = self.db.execute(delete_stmt)
         self.db.commit()

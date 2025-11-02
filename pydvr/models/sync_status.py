@@ -42,11 +42,7 @@ class SyncStatus(Base):
 
     # Override the default id field from Base
     id: Mapped[int] = mapped_column(
-        "sync_id",
-        Integer,
-        primary_key=True,
-        autoincrement=True,
-        doc="Sync operation ID"
+        "sync_id", Integer, primary_key=True, autoincrement=True, doc="Sync operation ID"
     )
 
     # Timing information
@@ -55,56 +51,38 @@ class SyncStatus(Base):
         nullable=False,
         default=lambda: datetime.now(UTC),
         index=True,
-        doc="When sync started (UTC)"
+        doc="When sync started (UTC)",
     )
 
     completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-        doc="When sync completed (UTC)"
+        DateTime(timezone=True), nullable=True, doc="When sync completed (UTC)"
     )
 
     # Status tracking
     status: Mapped[str] = mapped_column(
-        String(16),
-        nullable=False,
-        doc="Sync status: 'running', 'completed', 'failed'"
+        String(16), nullable=False, doc="Sync status: 'running', 'completed', 'failed'"
     )
 
     # Update counters
     lineups_updated: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        doc="Number of lineups added or updated"
+        Integer, nullable=False, default=0, doc="Number of lineups added or updated"
     )
 
     stations_updated: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        doc="Number of stations added or updated"
+        Integer, nullable=False, default=0, doc="Number of stations added or updated"
     )
 
     schedules_updated: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        doc="Number of schedules added or updated"
+        Integer, nullable=False, default=0, doc="Number of schedules added or updated"
     )
 
     programs_updated: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        doc="Number of programs added or updated"
+        Integer, nullable=False, default=0, doc="Number of programs added or updated"
     )
 
     # Error tracking
     error_message: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-        doc="Error message if sync failed"
+        Text, nullable=True, doc="Error message if sync failed"
     )
 
     def __repr__(self) -> str:

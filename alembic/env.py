@@ -1,7 +1,6 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
@@ -16,6 +15,7 @@ config = context.config
 # For migrations, we can use the database_url from alembic.ini or environment
 try:
     from pydvr.config import get_settings
+
     settings = get_settings()
     config.set_main_option("sqlalchemy.url", settings.database_url)
 except Exception:

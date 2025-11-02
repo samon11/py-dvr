@@ -28,6 +28,7 @@ router = APIRouter()
 # Request/Response Models
 # ============================================================================
 
+
 class CreateRecordingRequest(BaseModel):
     """Request model for creating a new recording.
 
@@ -36,21 +37,19 @@ class CreateRecordingRequest(BaseModel):
         padding_start_seconds: Optional seconds to start early (overrides default)
         padding_end_seconds: Optional seconds to end late (overrides default)
     """
-    schedule_id: str = Field(
-        ...,
-        description="Schedule ID from the guide to record"
-    )
+
+    schedule_id: str = Field(..., description="Schedule ID from the guide to record")
     padding_start_seconds: int | None = Field(
         default=None,
         ge=0,
         le=1800,  # Max 30 minutes
-        description="Seconds to start recording before scheduled time"
+        description="Seconds to start recording before scheduled time",
     )
     padding_end_seconds: int | None = Field(
         default=None,
         ge=0,
         le=3600,  # Max 60 minutes
-        description="Seconds to continue recording after scheduled end time"
+        description="Seconds to continue recording after scheduled end time",
     )
 
 
@@ -64,6 +63,7 @@ class RecordingResponse(BaseModel):
         padding_start_seconds: Seconds to start early
         padding_end_seconds: Seconds to end late
     """
+
     recording_id: int
     schedule_id: str
     status: str
@@ -78,15 +78,15 @@ class RecordingResponse(BaseModel):
 # API Endpoints
 # ============================================================================
 
+
 @router.post(
     "/api/recordings",
     response_model=RecordingResponse,
     status_code=status.HTTP_201_CREATED,
-    tags=["Recordings"]
+    tags=["Recordings"],
 )
 async def create_recording(
-    request: CreateRecordingRequest,
-    db: Session = Depends(get_db)
+    request: CreateRecordingRequest, db: Session = Depends(get_db)
 ) -> RecordingResponse:
     """
     Schedule a new recording.
@@ -123,17 +123,14 @@ async def create_recording(
         logger.warning(f"Schedule not found: {request.schedule_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Schedule with ID '{request.schedule_id}' not found"
+            detail=f"Schedule with ID '{request.schedule_id}' not found",
         )
 
     # Check if recording already exists for this schedule
     existing_recording = (
         db.query(Recording)
         .filter(Recording.schedule_id == request.schedule_id)
-        .filter(Recording.status.in_([
-            RecordingStatus.SCHEDULED,
-            RecordingStatus.IN_PROGRESS
-        ]))
+        .filter(Recording.status.in_([RecordingStatus.SCHEDULED, RecordingStatus.IN_PROGRESS]))
         .first()
     )
 
@@ -141,17 +138,18 @@ async def create_recording(
         logger.warning(f"Recording already exists for schedule: {request.schedule_id}")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Recording already scheduled for this program (ID: {existing_recording.id})"
+            detail=f"Recording already scheduled for this program (ID: {existing_recording.id})",
         )
 
     # Validate schedule is not in the past
     from datetime import datetime
+
     now = datetime.now(UTC).replace(tzinfo=None)  # Remove timezone for comparison with DB datetime
     if schedule.air_datetime < now:
         logger.warning(f"Schedule is in the past: {request.schedule_id}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot schedule recording for past program"
+            detail="Cannot schedule recording for past program",
         )
 
     # Create recording with defaults or provided padding values
@@ -159,11 +157,11 @@ async def create_recording(
         schedule_id=request.schedule_id,
         status=RecordingStatus.SCHEDULED,
         padding_start_seconds=request.padding_start_seconds
-            if request.padding_start_seconds is not None
-            else settings.default_padding_start,
+        if request.padding_start_seconds is not None
+        else settings.default_padding_start,
         padding_end_seconds=request.padding_end_seconds
-            if request.padding_end_seconds is not None
-            else settings.default_padding_end
+        if request.padding_end_seconds is not None
+        else settings.default_padding_end,
     )
 
     try:
@@ -183,26 +181,21 @@ async def create_recording(
             schedule_id=recording.schedule_id,
             status=recording.status.value,
             padding_start_seconds=recording.padding_start_seconds,
-            padding_end_seconds=recording.padding_end_seconds
+            padding_end_seconds=recording.padding_end_seconds,
         )
     except Exception as e:
         db.rollback()
         logger.error(f"Failed to create recording: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create recording. Please try again."
+            detail="Failed to create recording. Please try again.",
         )
 
 
 @router.delete(
-    "/api/recordings/{recording_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    tags=["Recordings"]
+    "/api/recordings/{recording_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Recordings"]
 )
-async def cancel_recording(
-    recording_id: int,
-    db: Session = Depends(get_db)
-) -> None:
+async def cancel_recording(recording_id: int, db: Session = Depends(get_db)) -> None:
     """
     Cancel a scheduled recording.
 
@@ -228,18 +221,16 @@ async def cancel_recording(
         logger.warning(f"Recording not found: {recording_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Recording with ID {recording_id} not found"
+            detail=f"Recording with ID {recording_id} not found",
         )
 
     # Check if recording can be cancelled
     if not recording.can_cancel():
-        logger.warning(
-            f"Cannot cancel recording {recording_id}: status={recording.status.value}"
-        )
+        logger.warning(f"Cannot cancel recording {recording_id}: status={recording.status.value}")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Cannot cancel recording with status '{recording.status.value}'. "
-                   "Only scheduled recordings can be cancelled."
+            "Only scheduled recordings can be cancelled.",
         )
 
     try:
@@ -253,19 +244,16 @@ async def cancel_recording(
         logger.error(f"Failed to cancel recording {recording_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to cancel recording. Please try again."
+            detail="Failed to cancel recording. Please try again.",
         )
 
 
 @router.delete(
     "/api/recordings/{recording_id}/delete",
     status_code=status.HTTP_204_NO_CONTENT,
-    tags=["Recordings"]
+    tags=["Recordings"],
 )
-async def delete_recording(
-    recording_id: int,
-    db: Session = Depends(get_db)
-) -> None:
+async def delete_recording(recording_id: int, db: Session = Depends(get_db)) -> None:
     """
     Delete a completed recording.
 
@@ -294,18 +282,20 @@ async def delete_recording(
         logger.warning(f"Recording not found: {recording_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Recording with ID {recording_id} not found"
+            detail=f"Recording with ID {recording_id} not found",
         )
 
     # Check if recording can be deleted (only completed or failed recordings)
-    if recording.status not in (RecordingStatus.COMPLETED, RecordingStatus.FAILED, RecordingStatus.CANCELLED):
-        logger.warning(
-            f"Cannot delete recording {recording_id}: status={recording.status.value}"
-        )
+    if recording.status not in (
+        RecordingStatus.COMPLETED,
+        RecordingStatus.FAILED,
+        RecordingStatus.CANCELLED,
+    ):
+        logger.warning(f"Cannot delete recording {recording_id}: status={recording.status.value}")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Cannot delete recording with status '{recording.status.value}'. "
-                   "Only completed, failed, or cancelled recordings can be deleted."
+            "Only completed, failed, or cancelled recordings can be deleted.",
         )
 
     try:
@@ -332,7 +322,7 @@ async def delete_recording(
         logger.error(f"Failed to delete recording {recording_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete recording. Please try again."
+            detail="Failed to delete recording. Please try again.",
         )
 
 
@@ -340,10 +330,10 @@ async def delete_recording(
 # Page Routes
 # ============================================================================
 
+
 @router.get("/scheduled", response_class=HTMLResponse, tags=["Navigation"])
 async def scheduled_recordings_page(
-    request: Request,
-    db: Session = Depends(get_db)
+    request: Request, db: Session = Depends(get_db)
 ) -> HTMLResponse:
     """
     Render the scheduled recordings page.
@@ -367,12 +357,9 @@ async def scheduled_recordings_page(
             db.query(Recording)
             .options(
                 joinedload(Recording.schedule).joinedload(Schedule.program),
-                joinedload(Recording.schedule).joinedload(Schedule.station)
+                joinedload(Recording.schedule).joinedload(Schedule.station),
             )
-            .filter(Recording.status.in_([
-                RecordingStatus.SCHEDULED,
-                RecordingStatus.IN_PROGRESS
-            ]))
+            .filter(Recording.status.in_([RecordingStatus.SCHEDULED, RecordingStatus.IN_PROGRESS]))
             .join(Schedule)
             .order_by(Schedule.air_datetime)
             .all()
@@ -389,38 +376,40 @@ async def scheduled_recordings_page(
 
             # Format datetime as ISO string with Z suffix for UTC
             air_datetime_str = schedule.air_datetime.isoformat()
-            if not air_datetime_str.endswith('Z') and '+' not in air_datetime_str:
-                air_datetime_str += 'Z'
+            if not air_datetime_str.endswith("Z") and "+" not in air_datetime_str:
+                air_datetime_str += "Z"
 
             # Calculate total duration with padding
             total_duration_seconds = (
-                recording.padding_start_seconds +
-                schedule.duration_seconds +
-                recording.padding_end_seconds
+                recording.padding_start_seconds
+                + schedule.duration_seconds
+                + recording.padding_end_seconds
             )
             total_duration_minutes = total_duration_seconds // 60
 
-            recordings_data.append({
-                "recording_id": recording.id,
-                "schedule_id": schedule.id,
-                "program_title": program.title,
-                "channel_number": station.channel_number,
-                "channel_name": station.name,
-                "air_datetime_utc": air_datetime_str,
-                "duration_minutes": schedule.duration_seconds // 60,
-                "total_duration_minutes": total_duration_minutes,
-                "padding_start_seconds": recording.padding_start_seconds,
-                "padding_end_seconds": recording.padding_end_seconds,
-                "status": recording.status.value,
-                "can_cancel": recording.can_cancel(),
-            })
+            recordings_data.append(
+                {
+                    "recording_id": recording.id,
+                    "schedule_id": schedule.id,
+                    "program_title": program.title,
+                    "channel_number": station.channel_number,
+                    "channel_name": station.name,
+                    "air_datetime_utc": air_datetime_str,
+                    "duration_minutes": schedule.duration_seconds // 60,
+                    "total_duration_minutes": total_duration_minutes,
+                    "padding_start_seconds": recording.padding_start_seconds,
+                    "padding_end_seconds": recording.padding_end_seconds,
+                    "status": recording.status.value,
+                    "can_cancel": recording.can_cancel(),
+                }
+            )
 
         return templates.TemplateResponse(
             "scheduled.html",
             {
                 "request": request,
                 "recordings": recordings_data,
-            }
+            },
         )
     except Exception as e:
         logger.error(f"Error loading scheduled recordings page: {e}", exc_info=True)
@@ -430,15 +419,12 @@ async def scheduled_recordings_page(
                 "request": request,
                 "recordings": [],
                 "error": "Failed to load scheduled recordings. Please try again later.",
-            }
+            },
         )
 
 
 @router.get("/recordings", response_class=HTMLResponse, tags=["Navigation"])
-async def recordings_library_page(
-    request: Request,
-    db: Session = Depends(get_db)
-) -> HTMLResponse:
+async def recordings_library_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     """
     Render the recordings library page.
 
@@ -463,7 +449,7 @@ async def recordings_library_page(
             db.query(Recording)
             .options(
                 joinedload(Recording.schedule).joinedload(Schedule.program),
-                joinedload(Recording.schedule).joinedload(Schedule.station)
+                joinedload(Recording.schedule).joinedload(Schedule.station),
             )
             .filter(Recording.status == RecordingStatus.COMPLETED)
             .join(Schedule)
@@ -496,8 +482,8 @@ async def recordings_library_page(
 
             # Format datetime as ISO string with Z suffix for UTC
             air_datetime_str = schedule.air_datetime.isoformat()
-            if not air_datetime_str.endswith('Z') and '+' not in air_datetime_str:
-                air_datetime_str += 'Z'
+            if not air_datetime_str.endswith("Z") and "+" not in air_datetime_str:
+                air_datetime_str += "Z"
 
             # Get file size if file exists
             file_size_bytes = 0
@@ -509,26 +495,34 @@ async def recordings_library_page(
                     file_size_bytes = file_path.stat().st_size
                     total_size_bytes += file_size_bytes
 
-            recordings_data.append({
-                "recording_id": recording.id,
-                "schedule_id": schedule.id,
-                "program_title": program.title,
-                "channel_number": station.channel_number,
-                "channel_name": station.name,
-                "air_datetime_utc": air_datetime_str,
-                "duration_minutes": schedule.duration_seconds // 60,
-                "file_path": recording.file_path,
-                "file_exists": file_exists,
-                "file_size_bytes": file_size_bytes,
-                "file_size_formatted": format_file_size(file_size_bytes),
-                "actual_start_time": recording.actual_start_time.isoformat() + 'Z' if recording.actual_start_time else None,
-                "actual_end_time": recording.actual_end_time.isoformat() + 'Z' if recording.actual_end_time else None,
-            })
+            recordings_data.append(
+                {
+                    "recording_id": recording.id,
+                    "schedule_id": schedule.id,
+                    "program_title": program.title,
+                    "channel_number": station.channel_number,
+                    "channel_name": station.name,
+                    "air_datetime_utc": air_datetime_str,
+                    "duration_minutes": schedule.duration_seconds // 60,
+                    "file_path": recording.file_path,
+                    "file_exists": file_exists,
+                    "file_size_bytes": file_size_bytes,
+                    "file_size_formatted": format_file_size(file_size_bytes),
+                    "actual_start_time": recording.actual_start_time.isoformat() + "Z"
+                    if recording.actual_start_time
+                    else None,
+                    "actual_end_time": recording.actual_end_time.isoformat() + "Z"
+                    if recording.actual_end_time
+                    else None,
+                }
+            )
 
         # Calculate storage stats
         recording_path = Path(settings.recording_path)
         storage_stats = {
-            "total_recordings_size": format_file_size(total_size_bytes) if recordings_data else "0 B",
+            "total_recordings_size": format_file_size(total_size_bytes)
+            if recordings_data
+            else "0 B",
             "recordings_count": len(recordings_data),
         }
 
@@ -551,7 +545,7 @@ async def recordings_library_page(
                 "request": request,
                 "recordings": recordings_data,
                 "storage_stats": storage_stats,
-            }
+            },
         )
     except Exception as e:
         logger.error(f"Error loading recordings library page: {e}", exc_info=True)
@@ -562,5 +556,5 @@ async def recordings_library_page(
                 "recordings": [],
                 "storage_stats": {"total_recordings_size": "0 B", "recordings_count": 0},
                 "error": "Failed to load recordings library. Please try again later.",
-            }
+            },
         )

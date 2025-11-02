@@ -89,22 +89,15 @@ async def lifespan(app: FastAPI):
 
     # Start background scheduler for periodic jobs
     # Daily sync at 4 AM
-    scheduler.add_job(
-        sync_guide_data_job,
-        trigger="cron",
-        hour=4,
-        minute=0,
-        id="daily_guide_sync"
-    )
+    scheduler.add_job(sync_guide_data_job, trigger="cron", hour=4, minute=0, id="daily_guide_sync")
     scheduler.start()
     logger.info("Background scheduler started - daily guide sync at 4 AM")
 
     # Start recording scheduler
     # This runs continuously, checking for upcoming recordings every 10 seconds
     import asyncio
-    recording_task = asyncio.create_task(
-        recording_scheduler.start(db_session_factory=SessionLocal)
-    )
+
+    asyncio.create_task(recording_scheduler.start(db_session_factory=SessionLocal))
     logger.info("Recording scheduler started - monitoring for upcoming recordings")
 
     yield
@@ -198,7 +191,7 @@ async def root(request: Request) -> HTMLResponse:
             "request": request,
             "hdhomerun_ip": settings.hdhomerun_ip,
             "recording_path": str(settings.recording_path),
-        }
+        },
     )
 
 

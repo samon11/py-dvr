@@ -152,7 +152,10 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default_factory=lambda: f"sqlite:///{get_database_file()}",
         description="Database connection URL",
-        examples=["sqlite:///~/.local/share/pydvr/pydvr.db", "postgresql://user:pass@localhost/pyhdhrdvr"],
+        examples=[
+            "sqlite:///~/.local/share/pydvr/pydvr.db",
+            "postgresql://user:pass@localhost/pyhdhrdvr",
+        ],
     )
 
     # Recording Padding Defaults
@@ -213,9 +216,7 @@ class Settings(BaseSettings):
 
         parts = v.split(".")
         if len(parts) != 4:
-            raise ValueError(
-                f"Invalid IP address format: {v}. Expected format: xxx.xxx.xxx.xxx"
-            )
+            raise ValueError(f"Invalid IP address format: {v}. Expected format: xxx.xxx.xxx.xxx")
 
         try:
             for part in parts:
@@ -226,9 +227,7 @@ class Settings(BaseSettings):
                     )
         except ValueError as e:
             if "invalid literal" in str(e):
-                raise ValueError(
-                    f"Invalid IP address: {v}. All parts must be numeric"
-                ) from e
+                raise ValueError(f"Invalid IP address: {v}. All parts must be numeric") from e
             raise
 
         return v
@@ -251,13 +250,9 @@ class Settings(BaseSettings):
         try:
             path.mkdir(parents=True, exist_ok=True)
         except PermissionError as e:
-            raise ValueError(
-                f"Cannot create recording directory {path}: Permission denied"
-            ) from e
+            raise ValueError(f"Cannot create recording directory {path}: Permission denied") from e
         except Exception as e:
-            raise ValueError(
-                f"Cannot create recording directory {path}: {e}"
-            ) from e
+            raise ValueError(f"Cannot create recording directory {path}: {e}") from e
 
         # Verify directory is writable
         if not path.is_dir():
@@ -273,9 +268,7 @@ class Settings(BaseSettings):
                 f"Recording directory {path} is not writable: Permission denied"
             ) from e
         except Exception as e:
-            raise ValueError(
-                f"Cannot write to recording directory {path}: {e}"
-            ) from e
+            raise ValueError(f"Cannot write to recording directory {path}: {e}") from e
 
         return path
 

@@ -1,9 +1,10 @@
-import json
-import httpx
 import hashlib
+import json
 import logging
 from datetime import UTC, datetime
 from typing import Any
+
+import httpx
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -28,6 +29,7 @@ from pydvr.schemas.schedules_direct import (
 )
 
 logger = logging.getLogger(__name__)
+
 
 class SchedulesDirectClient:
     """Client for Schedules Direct JSON API v20141201"""
@@ -72,24 +74,26 @@ class SchedulesDirectClient:
         cached = await self._get_cached_token()
         if cached and cached[1] > datetime.now(UTC).timestamp():
             self._token, self._token_expires = cached
-            return TokenResponse(token=self._token, tokenExpires=self._token_expires, code=0, message="OK", serverID="cached", datetime=datetime.now(UTC))
+            return TokenResponse(
+                token=self._token,
+                tokenExpires=self._token_expires,
+                code=0,
+                message="OK",
+                serverID="cached",
+                datetime=datetime.now(UTC),
+            )
 
         logger.debug("Attempting to authenticate with Schedules Direct API.")
         logger.debug(f"SD_USERNAME: {self.settings.sd_username}")
         # Do not log the password for security reasons
 
-        password_hash = hashlib.sha1(
-            self.settings.sd_password.encode()
-        ).hexdigest()
+        password_hash = hashlib.sha1(self.settings.sd_password.encode()).hexdigest()
 
         try:
             response = await self.client.post(
                 f"{self.BASE_URL}/token",
-                json={
-                    "username": self.settings.sd_username,
-                    "password": password_hash
-                },
-                headers={"Content-Type": "application/json"}
+                json={"username": self.settings.sd_username, "password": password_hash},
+                headers={"Content-Type": "application/json"},
             )
             response.raise_for_status()  # Raise an exception for 4xx/5xx responses
             data = response.json()
@@ -113,23 +117,29 @@ class SchedulesDirectClient:
                 self._handle_error_response(error_data)
             except json.JSONDecodeError:
                 # If response is not JSON, create a generic error
-                self._handle_error_response({"code": e.response.status_code, "message": str(e), "response": e.response.text})
+                self._handle_error_response(
+                    {"code": e.response.status_code, "message": str(e), "response": e.response.text}
+                )
             raise
         except httpx.RequestError as e:
             logger.error(f"Request Error during authentication: {e}")
             self._handle_error_response({"code": -1, "message": str(e)})
             raise
+
     async def _ensure_token(self) -> None:
         """Ensure we have a valid token, refresh if needed"""
-        if self._token is None or self._token_expires is None or \
-           self._token_expires <= datetime.now(UTC).timestamp():
+        if (
+            self._token is None
+            or self._token_expires is None
+            or self._token_expires <= datetime.now(UTC).timestamp()
+        ):
             await self.authenticate()
 
     # Base Request Method
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=10),
-        retry=retry_if_exception_type(httpx.RequestError)
+        retry=retry_if_exception_type(httpx.RequestError),
     )
     async def _request(self, method: str, endpoint: str, **kwargs) -> Any:
         """Base method with token header, error handling, retry logic"""
@@ -151,13 +161,11 @@ class SchedulesDirectClient:
             logger.debug(f"Request data body: {kwargs['data']}")
 
         try:
-            response = await self.client.request(
-                method, request_url, headers=headers, **kwargs
-            )
+            response = await self.client.request(method, request_url, headers=headers, **kwargs)
             logger.debug(f"Response status code: {response.status_code}")
             logger.debug(f"Response headers: {response.headers}")
             logger.debug(f"Response text: {response.text}")
-            data = response.json() # Parse JSON first to check for SD specific errors
+            data = response.json()  # Parse JSON first to check for SD specific errors
 
             if isinstance(data, dict) and "code" in data and data["code"] != 0:
                 self._handle_error_response(data)
@@ -202,10 +210,7 @@ class SchedulesDirectClient:
         )
         return ScheduleMD5Response.model_validate(response_data)
 
-    async def get_schedules(
-        self,
-        station_ids: list[dict]
-    ) -> SchedulesResponse:
+    async def get_schedules(self, station_ids: list[dict]) -> SchedulesResponse:
         """POST /schedules - Get schedules (batch, max 5000 stations)"""
         response_data = await self._request("POST", "/schedules", json=station_ids)
         return SchedulesResponse.model_validate(response_data)
@@ -217,12 +222,16 @@ class SchedulesDirectClient:
 
     async def get_headends(self, country: str, postal_code: str) -> list[Headend]:
         """GET /headends - Get available headends for a given country and postal code."""
-        response_data = await self._request("GET", f"/headends?country={country}&postalcode={postal_code}")
+        response_data = await self._request(
+            "GET", f"/headends?country={country}&postalcode={postal_code}"
+        )
         return [Headend(**headend) for headend in response_data]
 
     async def add_lineup(self, lineup_id: str) -> AddLineupResponse:
         """PUT /lineups/{lineupID} - Add a lineup to the user's account."""
-        response_data = await self._request("PUT", f"/lineups/{lineup_id}", json=AddLineupRequest(lineup=lineup_id).model_dump())
+        response_data = await self._request(
+            "PUT", f"/lineups/{lineup_id}", json=AddLineupRequest(lineup=lineup_id).model_dump()
+        )
         return AddLineupResponse(**response_data)
 
     async def delete_lineup(self, lineup_id: str) -> DeleteLineupResponse:
@@ -237,18 +246,21 @@ class SchedulesDirectClient:
         4005: "ACCOUNT_ACCESS_DISABLED",
         4006: "TOKEN_EXPIRED",
         4009: "TOO_MANY_LOGINS",
-        4102: "NO_LINEUPS", # Added for clarity, though handled in _handle_error_response
+        4102: "NO_LINEUPS",  # Added for clarity, though handled in _handle_error_response
         6000: "INVALID_PROGRAM_ID",
         6001: "PROGRAM_QUEUED",
         7020: "SCHEDULE_RANGE_EXCEEDED",
-        7100: "SCHEDULE_QUEUED"
+        7100: "SCHEDULE_QUEUED",
     }
 
     def _handle_error_response(self, response: dict) -> None:
         """Map SD error codes to exceptions"""
         # Special handling for NO_LINEUPS error (code 4102)
         if response.get("code") == 4102:
-            logger.info("Schedules Direct API returned 'NO_LINEUPS' (code 4102). This is expected for accounts without configured lineups.")
+            logger.info(
+                "Schedules Direct API returned 'NO_LINEUPS' (code 4102). "
+                "This is expected for accounts without configured lineups."
+            )
             return  # Do not raise an error, allow processing to continue
 
         error_data = SDErrorData(**response)

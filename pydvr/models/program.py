@@ -51,49 +51,33 @@ class Program(Base):
 
     # Override id to use string program_id from Schedules Direct
     id: Mapped[str] = mapped_column(
-        "program_id",
-        String(32),
-        primary_key=True,
-        doc="Schedules Direct program ID"
+        "program_id", String(32), primary_key=True, doc="Schedules Direct program ID"
     )
 
     # Core program metadata
-    title: Mapped[str] = mapped_column(
-        String(256),
-        nullable=False,
-        index=True,
-        doc="Program title"
-    )
+    title: Mapped[str] = mapped_column(String(256), nullable=False, index=True, doc="Program title")
 
     description: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-        doc="Full description/synopsis"
+        Text, nullable=True, doc="Full description/synopsis"
     )
 
     duration_seconds: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        doc="Standard program duration in seconds"
+        Integer, nullable=False, doc="Standard program duration in seconds"
     )
 
     # Episode metadata (for series episodes)
     season: Mapped[int | None] = mapped_column(
-        Integer,
-        nullable=True,
-        doc="Season number for episodic content"
+        Integer, nullable=True, doc="Season number for episodic content"
     )
 
     episode: Mapped[int | None] = mapped_column(
-        Integer,
-        nullable=True,
-        doc="Episode number within season"
+        Integer, nullable=True, doc="Episode number within season"
     )
 
     episode_title: Mapped[str | None] = mapped_column(
         String(256),
         nullable=True,
-        doc="Episode-specific title (e.g., 'Pilot', 'The One with the Jellyfish')"
+        doc="Episode-specific title (e.g., 'Pilot', 'The One with the Jellyfish')",
     )
 
     # Relationships
@@ -101,13 +85,11 @@ class Program(Base):
         "Schedule",
         back_populates="program",
         cascade="all, delete-orphan",
-        doc="Scheduled airings of this program"
+        doc="Scheduled airings of this program",
     )
 
     # Indexes
-    __table_args__ = (
-        Index("ix_program_title", "title"),
-    )
+    __table_args__ = (Index("ix_program_title", "title"),)
 
     def __repr__(self) -> str:
         """Return string representation with program id and title.

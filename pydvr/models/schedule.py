@@ -62,7 +62,7 @@ class Schedule(Base):
         "schedule_id",
         String(64),
         primary_key=True,
-        doc="Composite ID: {station_id}_{air_datetime}_{program_id}"
+        doc="Composite ID: {station_id}_{air_datetime}_{program_id}",
     )
 
     # Foreign keys
@@ -71,7 +71,7 @@ class Schedule(Base):
         ForeignKey("programs.program_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        doc="Reference to programs table"
+        doc="Reference to programs table",
     )
 
     station_id: Mapped[str] = mapped_column(
@@ -79,54 +79,41 @@ class Schedule(Base):
         ForeignKey("stations.station_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        doc="Reference to stations table"
+        doc="Reference to stations table",
     )
 
     # Timing information
     air_datetime: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        index=True,
-        doc="When program airs (UTC)"
+        DateTime(timezone=True), nullable=False, index=True, doc="When program airs (UTC)"
     )
 
     duration_seconds: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        doc="Duration of this airing in seconds"
+        Integer, nullable=False, doc="Duration of this airing in seconds"
     )
 
     # Change detection
     md5_hash: Mapped[str | None] = mapped_column(
-        String(32),
-        nullable=True,
-        doc="MD5 hash from Schedules Direct for change detection"
+        String(32), nullable=True, doc="MD5 hash from Schedules Direct for change detection"
     )
 
     # Relationships
     program: Mapped["Program"] = relationship(
-        "Program",
-        back_populates="schedules",
-        doc="The program being broadcast"
+        "Program", back_populates="schedules", doc="The program being broadcast"
     )
 
     station: Mapped["Station"] = relationship(
-        "Station",
-        back_populates="schedules",
-        doc="The station broadcasting the program"
+        "Station", back_populates="schedules", doc="The station broadcasting the program"
     )
 
     recordings: Mapped[list["Recording"]] = relationship(
         "Recording",
         back_populates="schedule",
         cascade="all, delete-orphan",
-        doc="Recordings scheduled for this airing"
+        doc="Recordings scheduled for this airing",
     )
 
     # Indexes
-    __table_args__ = (
-        Index("ix_schedule_station_time", "station_id", "air_datetime"),
-    )
+    __table_args__ = (Index("ix_schedule_station_time", "station_id", "air_datetime"),)
 
     def __repr__(self) -> str:
         """Return string representation with schedule details.
@@ -134,7 +121,7 @@ class Schedule(Base):
         Returns:
             String in format: Schedule(id='...', station='2.1', time='2025-10-31 20:00')
         """
-        time_str = self.air_datetime.strftime('%Y-%m-%d %H:%M') if self.air_datetime else 'N/A'
+        time_str = self.air_datetime.strftime("%Y-%m-%d %H:%M") if self.air_datetime else "N/A"
         return f"Schedule(id='{self.id[:20]}...', station='{self.station_id}', time='{time_str}')"
 
     @property
@@ -145,4 +132,5 @@ class Schedule(Base):
             End datetime (air_datetime + duration_seconds)
         """
         from datetime import timedelta
+
         return self.air_datetime + timedelta(seconds=self.duration_seconds)

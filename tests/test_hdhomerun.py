@@ -8,8 +8,6 @@ NO MOCKING - All tests run against a real device to verify actual behavior.
 """
 
 import os
-import time
-from pathlib import Path
 
 import pytest
 
@@ -21,7 +19,6 @@ from pydvr.services.hdhomerun import (
     TunerNotAvailableError,
     TuningError,
 )
-
 
 # Test configuration - update with your device IP
 TEST_DEVICE_IP = os.getenv("HDHOMERUN_IP", "192.168.1.177")
@@ -262,9 +259,9 @@ def test_manual_connection():
     Run this directly to test basic connectivity:
         pytest tests/test_hdhomerun.py::test_manual_connection -s
     """
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Testing connection to HDHomeRun at {TEST_DEVICE_IP}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     try:
         with HDHomeRunClient(TEST_DEVICE_IP) as client:
@@ -297,9 +294,9 @@ def test_manual_connection():
             print(f"   [OK] Stream URL: {stream_url}")
             print(f"   [OK] Test channel: {TEST_CHANNEL}\n")
 
-            print("="*60)
+            print("=" * 60)
             print("All tests passed! HDHomeRun client is working correctly.")
-            print("="*60)
+            print("=" * 60)
 
     except DeviceNotFoundError as e:
         print(f"ERROR: {e}")

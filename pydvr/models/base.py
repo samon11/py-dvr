@@ -35,7 +35,7 @@ class Base(DeclarativeBase):
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
         nullable=False,
-        doc="Record creation timestamp (UTC)"
+        doc="Record creation timestamp (UTC)",
     )
 
     updated_at: Mapped[datetime] = mapped_column(
@@ -43,7 +43,7 @@ class Base(DeclarativeBase):
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
         nullable=False,
-        doc="Record last update timestamp (UTC)"
+        doc="Record last update timestamp (UTC)",
     )
 
     def __repr__(self) -> str:
@@ -63,7 +63,4 @@ class Base(DeclarativeBase):
         Returns:
             Dictionary of column names to values
         """
-        return {
-            column.name: getattr(self, column.name)
-            for column in self.__table__.columns
-        }
+        return {column.name: getattr(self, column.name) for column in self.__table__.columns}

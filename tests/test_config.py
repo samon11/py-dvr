@@ -4,14 +4,12 @@ Tests for configuration management.
 These tests verify that the Settings class properly loads and validates configuration.
 """
 
-import os
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import pytest
 from pydantic import ValidationError
 
-from pydvr.config import Settings, get_settings, reload_settings
+from pydvr.config import Settings
 
 
 class TestSettingsValidation:
@@ -139,8 +137,7 @@ class TestSettingsHelpers:
         )
 
         assert (
-            settings.get_schedules_direct_base_url()
-            == "https://json.schedulesdirect.org/20141201"
+            settings.get_schedules_direct_base_url() == "https://json.schedulesdirect.org/20141201"
         )
 
 

@@ -54,7 +54,7 @@ class LineupService:
         """
         query = self.db.query(Lineup)
         if not include_deleted:
-            query = query.filter(Lineup.is_deleted == False)
+            query = query.filter(not Lineup.is_deleted)
         return query.all()
 
     async def search_headends(self, country: str, postal_code: str) -> list[Headend]:
@@ -167,7 +167,7 @@ class LineupService:
                 "transport": stmt.excluded.transport,
                 "modified": stmt.excluded.modified,
                 "is_deleted": stmt.excluded.is_deleted,
-            }
+            },
         )
         self.db.execute(stmt)
         self.db.commit()
@@ -178,8 +178,7 @@ class LineupService:
         for map_entry in lineup_data.map:
             # Find matching station in stations list
             station = next(
-                (s for s in lineup_data.stations if s.stationID == map_entry.stationID),
-                None
+                (s for s in lineup_data.stations if s.stationID == map_entry.stationID), None
             )
 
             if not station:
@@ -213,7 +212,7 @@ class LineupService:
                     "name": stmt.excluded.name,
                     "affiliate": stmt.excluded.affiliate,
                     "logo_url": stmt.excluded.logo_url,
-                }
+                },
             )
             self.db.execute(stmt)
             stations_added += 1
