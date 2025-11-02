@@ -1,0 +1,17 @@
+# Include important metadata files
+include README.md
+include LICENSE
+include .env.example
+
+# Include package data
+recursive-include pydvr/templates *
+recursive-include pydvr/static *
+
+# Include alembic configuration and migrations
+include alembic.ini
+recursive-include alembic *.py *.mako
+
+# Exclude certain patterns
+global-exclude __pycache__
+global-exclude *.py[co]
+global-exclude .DS_Store

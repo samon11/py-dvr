@@ -23,6 +23,35 @@ def cli():
 
 
 @cli.command()
+@click.option("--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)")
+@click.option("--port", default=80, help="Port to bind to (default: 80)")
+@click.option("--reload", is_flag=True, help="Enable auto-reload (for development)")
+def server(host: str, port: int, reload: bool):
+    """Start the PyDVR web server.
+
+    Starts the FastAPI web application for managing recordings and browsing
+    the TV guide. The web interface will be available at http://HOST:PORT
+
+    Examples:
+        pydvr server
+        pydvr server --port 9000
+        pydvr server --reload  # Development mode with auto-reload
+    """
+    import uvicorn
+
+    click.echo(f"Starting PyDVR server on http://{host}:{port}")
+    if reload:
+        click.echo(click.style("Auto-reload enabled (development mode)", fg="yellow"))
+
+    uvicorn.run(
+        "pydvr.main:app",
+        host=host,
+        port=port,
+        reload=reload
+    )
+
+
+@cli.command()
 @click.option("--days", default=7, help="Number of days to sync (default: 7)")
 @click.option("--no-cleanup", is_flag=True, help="Skip cleanup of old data")
 @click.option("--keep-days", default=7, help="Days of past data to keep during cleanup (default: 7)")
@@ -38,10 +67,10 @@ def sync_guide(days: int, no_cleanup: bool, keep_days: int):
     how much past data is retained.
 
     Examples:
-        python -m app.cli sync-guide
-        python -m app.cli sync-guide --days 7
-        python -m app.cli sync-guide --no-cleanup
-        python -m app.cli sync-guide --keep-days 14
+        pydvr sync-guide
+        pydvr sync-guide --days 7
+        pydvr sync-guide --no-cleanup
+        pydvr sync-guide --keep-days 14
     """
     # Check if database needs initialization
     if is_database_empty():

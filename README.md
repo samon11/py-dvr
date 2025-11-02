@@ -18,7 +18,7 @@ A web-based DVR management interface for HDHomeRun network TV tuner devices. Sch
 
 - Python 3.11 or higher
 - HDHomeRun network TV tuner device
-- Schedules Direct subscription ($25/year) - [Sign up here](https://www.schedulesdirect.org/)
+- Schedules Direct subscription ($36/year) - [Sign up here](https://www.schedulesdirect.org/)
 - Local network access to HDHomeRun device
 
 ## Quick Start
@@ -26,48 +26,49 @@ A web-based DVR management interface for HDHomeRun network TV tuner devices. Sch
 ### 1. Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/pyhdhrdvr.git
-cd pyhdhrdvr
+# Install from PyPI
+pip install py-dvr
 
-# Install dependencies
-pip install -e .
-
-# For development (includes testing tools)
+# Or for development, clone and install in editable mode
+git clone https://github.com/samon11/py-dvr.git
+cd py-dvr
 pip install -e ".[dev]"
 ```
 
 ### 2. Configuration
 
 ```bash
-# Copy the example configuration file
+# Create a configuration file
+# You can place this in your current directory or at ~/.pydvr/.env
 cp .env.example .env
 
-# Edit .env with your settings
+# Edit .env with your settings:
 # - Set HDHOMERUN_IP to your device's IP address
 # - Set SD_USERNAME and SD_PASSWORD with your Schedules Direct credentials
 # - Set RECORDING_PATH to where you want recordings saved
 ```
 
-### 3. Database Setup
+### 3. Sync Guide Data
 
 ```bash
-# Initialize the database
-alembic upgrade head
+# Run initial guide data sync (this will also initialize the database)
+pydvr sync-guide
+
+# Or specify more options
+pydvr sync-guide --days 14
 ```
 
-### 4. Sync Guide Data
-
-```bash
-# Run initial guide data sync (this may take a few minutes)
-python -m app.cli sync-guide
-```
-
-### 5. Run the Application
+### 4. Run the Application
 
 ```bash
 # Start the web server
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+pydvr server
+
+# Or with custom options
+pydvr server --port 9000
+
+# For development with auto-reload
+pydvr server --reload
 
 # Access the web interface at:
 # http://localhost:8000
@@ -110,7 +111,7 @@ Click the "Record" button next to any program to schedule a one-time recording. 
 Guide data should be refreshed periodically:
 
 ```bash
-python -m app.cli sync-guide
+pydvr sync-guide
 ```
 
 > **Note:** Automatic daily sync is planned for post-MVP.

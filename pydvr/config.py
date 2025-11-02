@@ -88,7 +88,7 @@ class Settings(BaseSettings):
     )
 
     port: int = Field(
-        default=8000,
+        default=80,
         description="Port to bind the application to",
         ge=1,
         le=65535,
