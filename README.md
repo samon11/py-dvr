@@ -64,7 +64,7 @@ pydvr server --reload
 **Important:** Before you can browse programs and schedule recordings, you must:
 
 1. **Add a lineup in the web interface:**
-   - Navigate to http://localhost:80 in your browser
+   - Navigate to http://YOUR_SERVER_IP:80 in your browser
    - Go to the Settings or Lineups page
    - Add your Schedules Direct lineup (e.g., USA-NY12345-X)
 
