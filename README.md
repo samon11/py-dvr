@@ -24,13 +24,10 @@ A web-based DVR management interface for HDHomeRun network TV tuner devices. Sch
 ### 1. Installation
 
 ```bash
-# Install from PyPI
-pip install py-dvr
-
-# Or for development, clone and install in editable mode
+# Clone and install in editable mode
 git clone https://github.com/samon11/py-dvr.git
 cd py-dvr
-pip install -e ".[dev]"
+pip install -e .
 ```
 
 ### 2. Configuration
@@ -46,17 +43,7 @@ pydvr setup
 # - Optional settings (server port, logging, etc.)
 ```
 
-### 3. Sync Guide Data
-
-```bash
-# Run initial guide data sync (this will also initialize the database)
-pydvr sync-guide
-
-# Or specify more options
-pydvr sync-guide --days 14
-```
-
-### 4. Run the Application
+### 3. Run the Application
 
 ```bash
 # Start the web server
@@ -71,6 +58,25 @@ pydvr server --reload
 # Access the web interface at:
 # http://localhost:80
 ```
+
+### 4. Add a Lineup and Sync Guide Data
+
+**Important:** Before you can browse programs and schedule recordings, you must:
+
+1. **Add a lineup in the web interface:**
+   - Navigate to http://localhost:80 in your browser
+   - Go to the Settings or Lineups page
+   - Add your Schedules Direct lineup (e.g., USA-NY12345-X)
+
+2. **Run the initial guide data sync:**
+   ```bash
+   pydvr sync-guide
+
+   # Or specify more days of guide data
+   pydvr sync-guide --days 14
+   ```
+
+This will download program schedule data from Schedules Direct. The sync process may take a few minutes depending on the number of channels in your lineup.
 
 ### 5. Running as a Background Process or on Startup
 
