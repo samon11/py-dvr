@@ -6,20 +6,19 @@ schedules, and program metadata with MD5-based change detection.
 """
 
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.sqlite import insert
 
-from sqlalchemy import delete, select
-
-from pydvr.services.schedules_direct import SchedulesDirectClient
 from pydvr.models.lineup import Lineup
-from pydvr.models.station import Station
-from pydvr.models.schedule import Schedule
 from pydvr.models.program import Program
-from pydvr.models.sync_status import SyncStatus
 from pydvr.models.recording import Recording, RecordingStatus
+from pydvr.models.schedule import Schedule
+from pydvr.models.station import Station
+from pydvr.models.sync_status import SyncStatus
+from pydvr.services.schedules_direct import SchedulesDirectClient
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -94,13 +93,13 @@ class GuideDataSync:
             if not station_ids:
                 logger.warning("No enabled stations found, skipping schedule/program sync")
                 sync_status.status = "completed"
-                sync_status.completed_at = datetime.now(timezone.utc)
+                sync_status.completed_at = datetime.now(UTC)
                 self.db.commit()
                 return sync_status
 
             # 4. Generate date list (YYYY-MM-DD format)
             dates = [
-                (datetime.now(timezone.utc) + timedelta(days=i)).strftime("%Y-%m-%d")
+                (datetime.now(UTC) + timedelta(days=i)).strftime("%Y-%m-%d")
                 for i in range(days)
             ]
             logger.info(f"Syncing schedules for dates: {dates}")
@@ -133,14 +132,14 @@ class GuideDataSync:
 
             # 8. Mark complete
             sync_status.status = "completed"
-            sync_status.completed_at = datetime.now(timezone.utc)
+            sync_status.completed_at = datetime.now(UTC)
             logger.info(f"Guide data sync completed successfully (sync_id={sync_status.id})")
 
         except Exception as e:
             logger.error(f"Guide data sync failed: {e}", exc_info=True)
             sync_status.status = "failed"
             sync_status.error_message = str(e)
-            sync_status.completed_at = datetime.now(timezone.utc)
+            sync_status.completed_at = datetime.now(UTC)
             raise
 
         finally:
@@ -169,7 +168,7 @@ class GuideDataSync:
                 name=lineup_data.name,
                 transport=lineup_data.transport,
                 location=lineup_data.location,
-                modified=datetime.now(timezone.utc)
+                modified=datetime.now(UTC)
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["lineup_id"],
@@ -177,7 +176,7 @@ class GuideDataSync:
                     "name": lineup_data.name,
                     "transport": lineup_data.transport,
                     "location": lineup_data.location,
-                    "modified": datetime.now(timezone.utc),
+                    "modified": datetime.now(UTC),
                     "is_deleted": False
                 }
             )
@@ -267,8 +266,8 @@ class GuideDataSync:
         md5_response = await self.client.get_schedule_md5s(station_ids)
 
         # Get existing schedules from database
-        date_start = datetime.strptime(dates[0], "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        date_end = datetime.strptime(dates[-1], "%Y-%m-%d").replace(tzinfo=timezone.utc) + timedelta(days=1)
+        date_start = datetime.strptime(dates[0], "%Y-%m-%d").replace(tzinfo=UTC)
+        date_end = datetime.strptime(dates[-1], "%Y-%m-%d").replace(tzinfo=UTC) + timedelta(days=1)
 
         existing_schedules = self.db.query(Schedule).filter(
             Schedule.station_id.in_(station_ids),
@@ -468,7 +467,7 @@ class GuideDataSync:
         logger.info(f"Starting cleanup of data older than {keep_days} days")
 
         # Calculate cutoff date (keep_days ago from now)
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=keep_days)
+        cutoff_date = datetime.now(UTC) - timedelta(days=keep_days)
         logger.info(f"Cutoff date: {cutoff_date}")
 
         # 1. Delete old schedules (that don't have recordings)

@@ -6,7 +6,7 @@ recordings, including scheduling new recordings from the guide.
 """
 
 import logging
-from typing import List, Optional
+from datetime import UTC
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
@@ -40,13 +40,13 @@ class CreateRecordingRequest(BaseModel):
         ...,
         description="Schedule ID from the guide to record"
     )
-    padding_start_seconds: Optional[int] = Field(
+    padding_start_seconds: int | None = Field(
         default=None,
         ge=0,
         le=1800,  # Max 30 minutes
         description="Seconds to start recording before scheduled time"
     )
-    padding_end_seconds: Optional[int] = Field(
+    padding_end_seconds: int | None = Field(
         default=None,
         ge=0,
         le=3600,  # Max 60 minutes
@@ -145,8 +145,8 @@ async def create_recording(
         )
 
     # Validate schedule is not in the past
-    from datetime import datetime, timezone
-    now = datetime.now(timezone.utc).replace(tzinfo=None)  # Remove timezone for comparison with DB datetime
+    from datetime import datetime
+    now = datetime.now(UTC).replace(tzinfo=None)  # Remove timezone for comparison with DB datetime
     if schedule.air_datetime < now:
         logger.warning(f"Schedule is in the past: {request.schedule_id}")
         raise HTTPException(
@@ -452,9 +452,9 @@ async def recordings_library_page(
     Returns:
         HTMLResponse: Rendered recordings.html template with completed recordings list
     """
-    import os
     import shutil
     from pathlib import Path
+
     from pydvr.main import templates
 
     try:

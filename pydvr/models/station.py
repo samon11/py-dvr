@@ -6,7 +6,7 @@ the HDHomeRun device, sourced from Schedules Direct lineup data.
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, Index, String, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from pydvr.models.base import Base

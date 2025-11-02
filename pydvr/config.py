@@ -11,16 +11,16 @@ Implements the Single Responsibility Principle by centralizing all configuration
 """
 
 from pathlib import Path
-from typing import Optional, Dict, Any
-import yaml
+from typing import Any
 
+import yaml
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from pydvr.paths import get_config_file, get_database_file, get_token_cache_file
 
 
-def load_yaml_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
+def load_yaml_config(config_path: Path | None = None) -> dict[str, Any]:
     """
     Load configuration from YAML file.
 
@@ -46,7 +46,7 @@ def load_yaml_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
         return {}
 
     try:
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             yaml_data = yaml.safe_load(f) or {}
 
         # Flatten nested YAML structure to match Pydantic field names
@@ -290,10 +290,10 @@ class Settings(BaseSettings):
 
 # Global settings instance
 # This implements the Singleton pattern for configuration access
-_settings: Optional[Settings] = None
+_settings: Settings | None = None
 
 
-def get_settings(config_path: Optional[Path] = None) -> Settings:
+def get_settings(config_path: Path | None = None) -> Settings:
     """
     Get or create the global settings instance.
 

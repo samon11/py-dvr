@@ -9,18 +9,17 @@ This module implements the main FastAPI application with proper SOLID principles
 
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Dict
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from pydvr.config import get_settings
-from pydvr.services.recorder import RecordingScheduler
-from pydvr.logging_config import setup_logging, get_logger
+from pydvr.logging_config import get_logger, setup_logging
 from pydvr.paths import get_log_file
+from pydvr.services.recorder import RecordingScheduler
 
 # Initialize settings
 settings = get_settings()
@@ -151,14 +150,15 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # Register routers
-from pydvr.routes import lineups, guide, recordings
+from pydvr.routes import guide, lineups, recordings
+
 app.include_router(lineups.router)
 app.include_router(guide.router)
 app.include_router(recordings.router)
 
 
 # Health Check Endpoint
-@app.get("/health", response_model=Dict[str, str], tags=["System"])
+@app.get("/health", response_model=dict[str, str], tags=["System"])
 async def health_check() -> JSONResponse:
     """
     Health check endpoint for monitoring application status.

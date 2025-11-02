@@ -4,9 +4,9 @@ Tracks the status of guide data sync operations, including counters for
 updated entities and error messages if sync fails.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, DateTime, Integer, String, Text
+from sqlalchemy import DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from pydvr.models.base import Base
@@ -53,7 +53,7 @@ class SyncStatus(Base):
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         index=True,
         doc="When sync started (UTC)"
     )

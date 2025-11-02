@@ -1,25 +1,26 @@
-from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any
+from datetime import datetime
+from typing import Any
+
 from pydantic import BaseModel, Field, RootModel, field_validator
 
 
 class SDErrorData(BaseModel):
     code: int
     message: str
-    response: Optional[str] = None
-    serverID: Optional[str] = None
-    timestamp: Optional[datetime] = Field(default=None, alias="datetime")
-    token: Optional[str] = None
-    tokenExpires: Optional[int] = None
-    minDate: Optional[str] = None
-    maxDate: Optional[str] = None
-    requestedDate: Optional[str] = None
-    stationID: Optional[str] = None
-    retryTime: Optional[datetime] = Field(default=None)
+    response: str | None = None
+    serverID: str | None = None
+    timestamp: datetime | None = Field(default=None, alias="datetime")
+    token: str | None = None
+    tokenExpires: int | None = None
+    minDate: str | None = None
+    maxDate: str | None = None
+    requestedDate: str | None = None
+    stationID: str | None = None
+    retryTime: datetime | None = Field(default=None)
 
     @field_validator('timestamp', 'retryTime', mode='before')
     @classmethod
-    def parse_datetime_string(cls, value: Any) -> Optional[datetime]:
+    def parse_datetime_string(cls, value: Any) -> datetime | None:
         if isinstance(value, str):
             # Assuming the string is in ISO 8601 format with 'Z' for UTC
             return datetime.fromisoformat(value.replace('Z', '+00:00'))
@@ -41,21 +42,21 @@ class TokenResponse(BaseModel):
     datetime: datetime
     token: str
     tokenExpires: int
-    serverTime: Optional[int] = None
+    serverTime: int | None = None
 
 
 class AccountStatus(BaseModel):
     expires: datetime
-    messages: List[str]
+    messages: list[str]
     maxLineups: int
 
 
 class LineupStatus(BaseModel):
     lineup: str
     modified: datetime
-    uri: Optional[str] = None
-    ID: Optional[str] = None  # Sometimes ID is used instead of lineup
-    isDeleted: Optional[bool] = False
+    uri: str | None = None
+    ID: str | None = None  # Sometimes ID is used instead of lineup
+    isDeleted: bool | None = False
 
 
 class SystemStatus(BaseModel):
@@ -66,10 +67,10 @@ class SystemStatus(BaseModel):
 
 class StatusResponse(BaseModel):
     account: AccountStatus
-    lineups: List[LineupStatus]
+    lineups: list[LineupStatus]
     lastDataUpdate: datetime
-    notifications: List[Any]
-    systemStatus: List[SystemStatus]
+    notifications: list[Any]
+    systemStatus: list[SystemStatus]
     serverID: str
     datetime: datetime
     code: int
@@ -86,10 +87,10 @@ class Headend(BaseModel):
     headend: str
     transport: str
     location: str
-    lineups: List[HeadendLineup]
+    lineups: list[HeadendLineup]
 
 
-class HeadendsResponse(RootModel[List[Headend]]):
+class HeadendsResponse(RootModel[list[Headend]]):
     pass
 
 
@@ -97,10 +98,10 @@ class LineupPreviewStation(BaseModel):
     channel: str
     name: str
     callsign: str
-    affiliate: Optional[str] = None
+    affiliate: str | None = None
 
 
-class LineupPreviewResponse(RootModel[List[LineupPreviewStation]]):
+class LineupPreviewResponse(RootModel[list[LineupPreviewStation]]):
     pass
 
 
@@ -109,15 +110,15 @@ class UserLineup(BaseModel):
     name: str
     transport: str
     location: str
-    uri: Optional[str] = None
-    isDeleted: Optional[bool] = False
+    uri: str | None = None
+    isDeleted: bool | None = False
 
 
 class UserLineupsResponse(BaseModel):
     code: int
     serverID: str
     datetime: datetime
-    lineups: List[UserLineup]
+    lineups: list[UserLineup]
 
 
 class AddLineupRequest(BaseModel):
@@ -147,14 +148,14 @@ class StationLogo(BaseModel):
     height: int
     width: int
     md5: str
-    source: Optional[str] = None
-    category: Optional[str] = None
+    source: str | None = None
+    category: str | None = None
 
 
 class Broadcaster(BaseModel):
     city: str
-    state: Optional[str] = None
-    postalcode: Optional[str] = None
+    state: str | None = None
+    postalcode: str | None = None
     country: str
 
 
@@ -162,54 +163,54 @@ class LineupStation(BaseModel):
     stationID: str
     name: str
     callsign: str
-    affiliate: Optional[str] = None
-    broadcastLanguage: Optional[List[str]] = None
-    descriptionLanguage: Optional[List[str]] = None
-    broadcaster: Optional[Broadcaster] = None
-    isCommercialFree: Optional[bool] = False
-    stationLogo: Optional[List[StationLogo]] = None
-    logo: Optional[StationLogo] = None  # Deprecated
+    affiliate: str | None = None
+    broadcastLanguage: list[str] | None = None
+    descriptionLanguage: list[str] | None = None
+    broadcaster: Broadcaster | None = None
+    isCommercialFree: bool | None = False
+    stationLogo: list[StationLogo] | None = None
+    logo: StationLogo | None = None  # Deprecated
 
 
 class LineupMapEntry(BaseModel):
     stationID: str
     channel: str
-    uhfVhf: Optional[int] = None
-    atscMajor: Optional[int] = None
-    atscMinor: Optional[int] = None
-    providerCallsign: Optional[str] = None
-    logicalChannelNumber: Optional[str] = None
-    matchType: Optional[str] = None
-    frequencyHz: Optional[int] = None
-    serviceID: Optional[int] = None
-    networkID: Optional[int] = None
-    transportID: Optional[int] = None
-    deliverySystem: Optional[str] = None
-    modulationSystem: Optional[str] = None
-    symbolrate: Optional[int] = None
-    polarization: Optional[str] = None
-    fec: Optional[str] = None
-    virtualChannel: Optional[str] = None
-    channelMajor: Optional[int] = None
-    channelMinor: Optional[int] = None
+    uhfVhf: int | None = None
+    atscMajor: int | None = None
+    atscMinor: int | None = None
+    providerCallsign: str | None = None
+    logicalChannelNumber: str | None = None
+    matchType: str | None = None
+    frequencyHz: int | None = None
+    serviceID: int | None = None
+    networkID: int | None = None
+    transportID: int | None = None
+    deliverySystem: str | None = None
+    modulationSystem: str | None = None
+    symbolrate: int | None = None
+    polarization: str | None = None
+    fec: str | None = None
+    virtualChannel: str | None = None
+    channelMajor: int | None = None
+    channelMinor: int | None = None
 
 
 class LineupMetadata(BaseModel):
     lineup: str
     modified: datetime
     transport: str
-    modulation: Optional[str] = None
+    modulation: str | None = None
 
 
 class LineupStationsResponse(BaseModel):
-    map: List[LineupMapEntry]
-    stations: List[LineupStation]
+    map: list[LineupMapEntry]
+    stations: list[LineupStation]
     metadata: LineupMetadata
 
 
 class ProgramTitle(BaseModel):
     title120: str
-    titleLanguage: Optional[str] = None
+    titleLanguage: str | None = None
 
 
 class ProgramDescription(BaseModel):
@@ -218,51 +219,51 @@ class ProgramDescription(BaseModel):
 
 
 class ProgramDescriptions(BaseModel):
-    description1000: Optional[List[ProgramDescription]] = None
-    description100: Optional[List[ProgramDescription]] = None
+    description1000: list[ProgramDescription] | None = None
+    description100: list[ProgramDescription] | None = None
 
 
 class ProgramMetadataEntry(BaseModel):
-    season: Optional[int] = None
-    episode: Optional[int] = None
-    totalEpisodes: Optional[int] = None
-    totalSeasons: Optional[int] = None
-    url: Optional[str] = None # For TVmaze
+    season: int | None = None
+    episode: int | None = None
+    totalEpisodes: int | None = None
+    totalSeasons: int | None = None
+    url: str | None = None # For TVmaze
 
 
 class ProgramMetadata(BaseModel):
-    Gracenote: Optional[ProgramMetadataEntry] = None
-    TVmaze: Optional[ProgramMetadataEntry] = None
+    Gracenote: ProgramMetadataEntry | None = None
+    TVmaze: ProgramMetadataEntry | None = None
 
 
 class CastCrewMember(BaseModel):
     billingOrder: str
     role: str
     name: str
-    characterName: Optional[str] = None
-    nameId: Optional[str] = None
-    personId: Optional[str] = None
+    characterName: str | None = None
+    nameId: str | None = None
+    personId: str | None = None
 
 
 class ContentRating(BaseModel):
     body: str
     code: str
-    country: Optional[str] = None
-    contentWarning: Optional[List[str]] = None
+    country: str | None = None
+    contentWarning: list[str] | None = None
 
 
 class MovieQualityRating(BaseModel):
     ratingsBody: str
     rating: str
-    minRating: Optional[str] = None
-    maxRating: Optional[str] = None
-    increment: Optional[str] = None
+    minRating: str | None = None
+    maxRating: str | None = None
+    increment: str | None = None
 
 
 class MovieInfo(BaseModel):
-    year: Optional[str] = None
-    duration: Optional[int] = None
-    qualityRating: Optional[List[MovieQualityRating]] = None
+    year: str | None = None
+    duration: int | None = None
+    qualityRating: list[MovieQualityRating] | None = None
 
 
 class MultiPart(BaseModel):
@@ -272,36 +273,36 @@ class MultiPart(BaseModel):
 
 class ProgramResponse(BaseModel):
     programID: str
-    resourceID: Optional[str] = None
-    titles: List[ProgramTitle]
-    descriptions: Optional[ProgramDescriptions] = None
-    originalAirDate: Optional[str] = None
-    showType: Optional[str] = None
+    resourceID: str | None = None
+    titles: list[ProgramTitle]
+    descriptions: ProgramDescriptions | None = None
+    originalAirDate: str | None = None
+    showType: str | None = None
     entityType: str
-    country: Optional[List[str]] = None
-    genres: Optional[List[str]] = None
-    cast: Optional[List[CastCrewMember]] = None
-    crew: Optional[List[CastCrewMember]] = None
-    episodeTitle150: Optional[str] = None
-    duration: Optional[int] = None
-    metadata: Optional[List[Dict[str, ProgramMetadataEntry]]] = None
-    hasImageArtwork: Optional[bool] = False
-    hasEpisodeArtwork: Optional[bool] = False
-    hasSeasonArtwork: Optional[bool] = False
-    hasSeriesArtwork: Optional[bool] = False
-    hasMovieArtwork: Optional[bool] = False
-    hasSportsArtwork: Optional[bool] = False
-    hash: Optional[str] = None
+    country: list[str] | None = None
+    genres: list[str] | None = None
+    cast: list[CastCrewMember] | None = None
+    crew: list[CastCrewMember] | None = None
+    episodeTitle150: str | None = None
+    duration: int | None = None
+    metadata: list[dict[str, ProgramMetadataEntry]] | None = None
+    hasImageArtwork: bool | None = False
+    hasEpisodeArtwork: bool | None = False
+    hasSeasonArtwork: bool | None = False
+    hasSeriesArtwork: bool | None = False
+    hasMovieArtwork: bool | None = False
+    hasSportsArtwork: bool | None = False
+    hash: str | None = None
     md5: str
-    contentAdvisory: Optional[List[str]] = None
-    contentRating: Optional[List[ContentRating]] = None
-    movie: Optional[MovieInfo] = None
-    officialURL: Optional[str] = None
-    multiPart: Optional[MultiPart] = None
-    eventDetails: Optional[Dict[str, Any]] = None # Too complex to model fully for now
+    contentAdvisory: list[str] | None = None
+    contentRating: list[ContentRating] | None = None
+    movie: MovieInfo | None = None
+    officialURL: str | None = None
+    multiPart: MultiPart | None = None
+    eventDetails: dict[str, Any] | None = None # Too complex to model fully for now
 
 
-class ProgramsResponse(RootModel[List[ProgramResponse]]):
+class ProgramsResponse(RootModel[list[ProgramResponse]]):
     pass
 
 
@@ -312,7 +313,7 @@ class ScheduleMD5Entry(BaseModel):
     md5: str
 
 
-class ScheduleMD5Response(RootModel[Dict[str, Dict[str, ScheduleMD5Entry]]]):
+class ScheduleMD5Response(RootModel[dict[str, dict[str, ScheduleMD5Entry]]]):
     pass
 
 
@@ -321,41 +322,41 @@ class ScheduleProgram(BaseModel):
     airDateTime: datetime
     duration: int
     md5: str
-    new: Optional[bool] = False
-    cableInTheClassroom: Optional[bool] = False
-    catchup: Optional[bool] = False
-    continued: Optional[bool] = False
-    educational: Optional[bool] = False
-    joinedInProgress: Optional[bool] = False
-    leftInProgress: Optional[bool] = False
-    premiere: Optional[bool] = False
-    programBreak: Optional[bool] = False
-    repeat: Optional[bool] = False
-    signed: Optional[bool] = False
-    subjectToBlackout: Optional[bool] = False
-    timeApproximate: Optional[bool] = False
-    free: Optional[bool] = False
-    liveTapeDelay: Optional[str] = None
-    isPremiereOrFinale: Optional[str] = None
-    ratings: Optional[List[ContentRating]] = None
-    multiPart: Optional[MultiPart] = None
-    audioProperties: Optional[List[str]] = None
-    videoProperties: Optional[List[str]] = None
+    new: bool | None = False
+    cableInTheClassroom: bool | None = False
+    catchup: bool | None = False
+    continued: bool | None = False
+    educational: bool | None = False
+    joinedInProgress: bool | None = False
+    leftInProgress: bool | None = False
+    premiere: bool | None = False
+    programBreak: bool | None = False
+    repeat: bool | None = False
+    signed: bool | None = False
+    subjectToBlackout: bool | None = False
+    timeApproximate: bool | None = False
+    free: bool | None = False
+    liveTapeDelay: str | None = None
+    isPremiereOrFinale: str | None = None
+    ratings: list[ContentRating] | None = None
+    multiPart: MultiPart | None = None
+    audioProperties: list[str] | None = None
+    videoProperties: list[str] | None = None
 
 
 class ScheduleMetadata(BaseModel):
     modified: datetime
     md5: str
     startDate: str
-    code: Optional[int] = None
-    isDeleted: Optional[bool] = False
+    code: int | None = None
+    isDeleted: bool | None = False
 
 
 class ScheduleEntry(BaseModel):
     stationID: str
-    programs: List[ScheduleProgram]
+    programs: list[ScheduleProgram]
     metadata: ScheduleMetadata
 
 
-class SchedulesResponse(RootModel[List[ScheduleEntry]]):
+class SchedulesResponse(RootModel[list[ScheduleEntry]]):
     pass

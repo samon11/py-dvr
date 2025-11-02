@@ -8,13 +8,12 @@ Implements the Single Responsibility Principle for logging configuration.
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
 
 
 def setup_logging(
     log_level: str = "INFO",
-    log_file: Optional[Path] = None,
-    log_format: Optional[str] = None,
+    log_file: Path | None = None,
+    log_format: str | None = None,
 ) -> logging.Logger:
     """
     Configure root logger for the application.

@@ -6,19 +6,18 @@ and removing lineups with database cleanup.
 """
 
 import logging
-from typing import List
-from sqlalchemy.orm import Session
-from sqlalchemy.dialects.sqlite import insert
 
-from pydvr.services.schedules_direct import SchedulesDirectClient
+from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy.orm import Session
+
 from pydvr.models.lineup import Lineup
 from pydvr.models.station import Station
 from pydvr.schemas.schedules_direct import (
-    Headend,
-    UserLineup,
     AddLineupResponse,
     DeleteLineupResponse,
+    Headend,
 )
+from pydvr.services.schedules_direct import SchedulesDirectClient
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +43,7 @@ class LineupService:
         self.db = db
         self.client = SchedulesDirectClient()
 
-    async def get_user_lineups(self, include_deleted: bool = False) -> List[Lineup]:
+    async def get_user_lineups(self, include_deleted: bool = False) -> list[Lineup]:
         """Get lineups from the database.
 
         Args:
@@ -58,7 +57,7 @@ class LineupService:
             query = query.filter(Lineup.is_deleted == False)
         return query.all()
 
-    async def search_headends(self, country: str, postal_code: str) -> List[Headend]:
+    async def search_headends(self, country: str, postal_code: str) -> list[Headend]:
         """Search for available headends/lineups by location.
 
         Args:

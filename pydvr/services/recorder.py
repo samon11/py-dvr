@@ -14,7 +14,7 @@ Design Principles:
 import asyncio
 import logging
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -127,7 +127,7 @@ class RecordingScheduler:
         Args:
             db: Database session
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         lookahead = now + timedelta(minutes=self.lookahead_minutes)
 
         # Query for scheduled recordings that should start soon
@@ -163,7 +163,7 @@ class RecordingScheduler:
             # Ensure air_datetime is timezone-aware (assume UTC if naive)
             air_dt = schedule.air_datetime
             if air_dt.tzinfo is None:
-                air_dt = air_dt.replace(tzinfo=timezone.utc)
+                air_dt = air_dt.replace(tzinfo=UTC)
 
             start_time = (air_dt - timedelta(seconds=recording.padding_start_seconds))
 
@@ -207,7 +207,7 @@ class RecordingScheduler:
             db_session_factory: Factory function to create database sessions
         """
         db = db_session_factory()
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
 
         try:
             # Load recording with relationships
@@ -261,7 +261,7 @@ class RecordingScheduler:
                     )
 
                 # Mark recording as completed
-                end_time = datetime.now(timezone.utc)
+                end_time = datetime.now(UTC)
                 recording.mark_completed(end_time, output_path)
                 db.commit()
 
@@ -275,7 +275,7 @@ class RecordingScheduler:
                 error_msg = f"No tuner available: {e}"
                 logger.error(f"Recording {recording_id} failed: {error_msg}")
 
-                end_time = datetime.now(timezone.utc)
+                end_time = datetime.now(UTC)
                 recording.mark_failed(error_msg, end_time)
                 db.commit()
 
@@ -284,7 +284,7 @@ class RecordingScheduler:
                 error_msg = f"Stream error: {e}"
                 logger.error(f"Recording {recording_id} failed: {error_msg}")
 
-                end_time = datetime.now(timezone.utc)
+                end_time = datetime.now(UTC)
                 recording.mark_failed(error_msg, end_time)
                 db.commit()
 
@@ -296,7 +296,7 @@ class RecordingScheduler:
                     exc_info=True
                 )
 
-                end_time = datetime.now(timezone.utc)
+                end_time = datetime.now(UTC)
                 recording.mark_failed(error_msg, end_time)
                 db.commit()
 

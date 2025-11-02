@@ -261,7 +261,7 @@ pydvr sync-guide
 
 ## Architecture
 
-- **Backend:** FastAPI (Python 3.13+)
+- **Backend:** FastAPI (Python 3.11+)
 - **Database:** SQLite with SQLAlchemy ORM and Alembic migrations
 - **Templates:** Jinja2 server-side rendering
 - **Recording Format:** MPEG-TS (original transport stream)
@@ -341,13 +341,14 @@ ruff format .
 - Verify channel number matches your lineup
 - Test channel with official HDHomeRun app
 
-## MVP Scope
-
-This is the MVP (Minimum Viable Product) version. Current features:
+## Project Scope
 
 ✅ One-time recording scheduling
+
 ✅ Basic web interface
+
 ✅ Manual guide data sync
+
 ✅ Simple list-based guide view
 
 ### Coming in Future Versions
@@ -358,7 +359,6 @@ This is the MVP (Minimum Viable Product) version. Current features:
 - Conflict detection and resolution
 - Setup wizard with device auto-discovery
 - System monitoring dashboard
-- Automatic guide data refresh
 
 ## License
 

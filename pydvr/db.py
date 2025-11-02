@@ -135,7 +135,7 @@ class DatabaseManager:
         Base.metadata.drop_all(bind=self.engine)
 
     @contextmanager
-    def get_session(self) -> Generator[Session, None, None]:
+    def get_session(self) -> Generator[Session]:
         """Context manager for database sessions.
 
         Provides automatic session lifecycle management with proper
@@ -215,7 +215,7 @@ def get_db_manager() -> DatabaseManager:
     return _db_manager
 
 
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Generator[Session]:
     """FastAPI dependency for database sessions.
 
     This function is designed to be used as a FastAPI dependency,

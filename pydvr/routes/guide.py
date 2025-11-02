@@ -7,15 +7,15 @@ upcoming programs and scheduling recordings.
 
 import logging
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import Any
 
-from fastapi import APIRouter, Depends, Request, Query
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
-from sqlalchemy import and_, func
+from sqlalchemy import and_
 from sqlalchemy.orm import Session, joinedload
 
 from pydvr.database import get_db
-from pydvr.models import Schedule, Program, Station, Recording
+from pydvr.models import Recording, Schedule, Station
 from pydvr.models.recording import RecordingStatus
 
 logger = logging.getLogger(__name__)
@@ -213,7 +213,7 @@ async def guide_page(
 # Helper Functions
 # ============================================================================
 
-def _format_stations_for_dropdown(stations: List[Station]) -> List[Dict[str, Any]]:
+def _format_stations_for_dropdown(stations: list[Station]) -> list[dict[str, Any]]:
     """
     Format stations for dropdown display.
 
@@ -249,7 +249,7 @@ def _format_stations_for_dropdown(stations: List[Station]) -> List[Dict[str, Any
     return stations_list
 
 
-def _format_programs_for_display(schedules: List[Schedule], scheduled_schedule_ids: set = None) -> List[Dict[str, Any]]:
+def _format_programs_for_display(schedules: list[Schedule], scheduled_schedule_ids: set = None) -> list[dict[str, Any]]:
     """
     Format schedules for template display.
 

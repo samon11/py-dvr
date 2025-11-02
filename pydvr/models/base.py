@@ -5,7 +5,7 @@ following the Single Responsibility Principle by centralizing common
 database patterns and timestamp management.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import DateTime
@@ -33,15 +33,15 @@ class Base(DeclarativeBase):
     # Audit timestamps - automatically managed
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
         doc="Record creation timestamp (UTC)"
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
         nullable=False,
         doc="Record last update timestamp (UTC)"
     )

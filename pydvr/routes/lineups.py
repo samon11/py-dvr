@@ -7,19 +7,13 @@ adding them to the account, and deleting them.
 """
 
 import logging
-from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 
 from pydvr.database import get_db
 from pydvr.services.lineup_service import LineupService
-from pydvr.schemas.schedules_direct import (
-    Headend,
-    AddLineupResponse,
-    DeleteLineupResponse,
-)
 
 logger = logging.getLogger(__name__)
 

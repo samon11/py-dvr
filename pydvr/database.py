@@ -5,14 +5,14 @@ Provides database connection and session management using SQLAlchemy 2.0+
 with proper dependency injection patterns for FastAPI.
 """
 
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
+from alembic.config import Config
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import Session, sessionmaker
-from alembic.config import Config
-from alembic import command
 
+from alembic import command
 from pydvr.config import get_settings
 
 # Get settings
@@ -34,7 +34,7 @@ SessionLocal = sessionmaker(
 )
 
 
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Generator[Session]:
     """
     Database session dependency for FastAPI.
 

@@ -1,37 +1,33 @@
+import json
+import httpx
 import hashlib
 import logging
-import httpx
-import json
-import asyncio
-
-logger = logging.getLogger(__name__)
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
-from typing import Any, List
-
+from datetime import UTC, datetime
+from typing import Any
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
 
 from pydvr.config import get_settings
 from pydvr.schemas.schedules_direct import (
-    TokenResponse,
-    UserLineup,
-    LineupStationsResponse,
-    ScheduleMD5Response,
-    SchedulesResponse,
-    ProgramsResponse,
-    Headend,
     AddLineupRequest,
     AddLineupResponse,
     DeleteLineupResponse,
+    Headend,
+    LineupStationsResponse,
+    ProgramsResponse,
+    ScheduleMD5Response,
+    SchedulesResponse,
     SDError,
     SDErrorData,
+    TokenResponse,
+    UserLineup,
 )
 
+logger = logging.getLogger(__name__)
 
 class SchedulesDirectClient:
     """Client for Schedules Direct JSON API v20141201"""
@@ -52,13 +48,13 @@ class SchedulesDirectClient:
             return None
 
         try:
-            with open(cache_path, "r") as f:
+            with open(cache_path) as f:
                 data = json.load(f)
             token = data.get("token")
             expires = data.get("tokenExpires")
-            if token and expires and expires > datetime.now(timezone.utc).timestamp():
+            if token and expires and expires > datetime.now(UTC).timestamp():
                 return token, expires
-        except (json.JSONDecodeError, IOError):
+        except (OSError, json.JSONDecodeError):
             # Cache file is corrupt or unreadable, treat as no cache
             pass
         return None
@@ -74,9 +70,9 @@ class SchedulesDirectClient:
         """Authenticate and return token (POST /token)"""
         # Check cache first
         cached = await self._get_cached_token()
-        if cached and cached[1] > datetime.now(timezone.utc).timestamp():
+        if cached and cached[1] > datetime.now(UTC).timestamp():
             self._token, self._token_expires = cached
-            return TokenResponse(token=self._token, tokenExpires=self._token_expires, code=0, message="OK", serverID="cached", datetime=datetime.now(timezone.utc))
+            return TokenResponse(token=self._token, tokenExpires=self._token_expires, code=0, message="OK", serverID="cached", datetime=datetime.now(UTC))
 
         logger.debug("Attempting to authenticate with Schedules Direct API.")
         logger.debug(f"SD_USERNAME: {self.settings.sd_username}")
@@ -126,7 +122,7 @@ class SchedulesDirectClient:
     async def _ensure_token(self) -> None:
         """Ensure we have a valid token, refresh if needed"""
         if self._token is None or self._token_expires is None or \
-           self._token_expires <= datetime.now(timezone.utc).timestamp():
+           self._token_expires <= datetime.now(UTC).timestamp():
             await self.authenticate()
 
     # Base Request Method
@@ -141,7 +137,7 @@ class SchedulesDirectClient:
         headers = kwargs.pop("headers", {})
         headers["token"] = self._token
         headers["User-agent"] = "PyHDHrDVR/1.0"
-        
+
         # Only set Content-Type for methods that typically have a body
         if method in ["POST", "PUT", "PATCH"]:
             headers["Content-Type"] = "application/json"
@@ -186,7 +182,7 @@ class SchedulesDirectClient:
             raise
 
     # API Endpoints
-    async def get_lineups(self) -> List[UserLineup]:
+    async def get_lineups(self) -> list[UserLineup]:
         """GET /lineups - Get user's lineups"""
         response_data = await self._request("GET", "/lineups")
         return [UserLineup(**lineup) for lineup in response_data.get("lineups", [])]
@@ -219,7 +215,7 @@ class SchedulesDirectClient:
         response_data = await self._request("POST", "/programs", json=program_ids)
         return ProgramsResponse.model_validate(response_data)
 
-    async def get_headends(self, country: str, postal_code: str) -> List[Headend]:
+    async def get_headends(self, country: str, postal_code: str) -> list[Headend]:
         """GET /headends - Get available headends for a given country and postal code."""
         response_data = await self._request("GET", f"/headends?country={country}&postalcode={postal_code}")
         return [Headend(**headend) for headend in response_data]

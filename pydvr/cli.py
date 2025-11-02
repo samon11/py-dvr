@@ -11,19 +11,21 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 import asyncio
+
 import click
 import yaml
 
 from pydvr.database import get_db, is_database_empty, run_migrations
-from pydvr.services.guide_sync import GuideDataSync
 from pydvr.paths import (
-    get_config_file,
-    get_config_dir,
-    get_log_dir,
     get_app_data_dir,
     get_cache_dir,
+    get_config_dir,
+    get_config_file,
+    get_log_dir,
     print_paths,
 )
+from pydvr.services.guide_sync import GuideDataSync
+
 
 @click.group()
 def cli():
