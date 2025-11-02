@@ -1,4 +1,4 @@
-# PyHDHRDVR - MVP Task List
+# PyDVR - MVP Task List
 
 **Version:** 1.0 - MVP Only
 **Date:** 2025-10-31

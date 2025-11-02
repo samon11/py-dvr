@@ -71,7 +71,7 @@ async def lifespan(app: FastAPI):
     from app.database import SessionLocal
 
     # Startup
-    print(f"PyHDHRDVR starting on {settings.host}:{settings.port}")
+    print(f"PyDVR starting on {settings.host}:{settings.port}")
     print(f"HDHomeRun device: {settings.hdhomerun_ip}")
     print(f"Recording path: {settings.recording_path}")
 
@@ -98,7 +98,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    print("PyHDHRDVR shutting down...")
+    print("PyDVR shutting down...")
 
     # Shutdown recording scheduler
     await recording_scheduler.stop()
@@ -112,7 +112,7 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI application
 app = FastAPI(
-    title="PyHDHRDVR",
+    title="PyDVR",
     description="Web-based DVR management interface for HDHomeRun network TV tuners",
     version="0.1.0",
     docs_url="/api/docs",

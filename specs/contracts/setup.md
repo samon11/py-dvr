@@ -68,7 +68,7 @@ The setup wizard guides new users through initial system configuration. It consi
   "success": true,
   "data": {
     "step": 1,
-    "title": "Welcome to PyHDHRDVR",
+    "title": "Welcome to PyDVR",
     "description": "Let's get your DVR system configured.",
     "prerequisites": {
       "python_version": {

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**PyHDHRDVR** is a web-based DVR management interface for HDHomeRun network TV tuner devices. It enables users to browse TV program schedules from Schedules Direct, schedule recordings (one-time and series), and automatically capture live TV streams to disk.
+**PyDVR** is a web-based DVR management interface for HDHomeRun network TV tuner devices. It enables users to browse TV program schedules from Schedules Direct, schedule recordings (one-time and series), and automatically capture live TV streams to disk.
 
 **Technology Stack:**
 - Backend: FastAPI (Python 3.13+) with Jinja2 server-side templates

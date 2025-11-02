@@ -9,7 +9,7 @@ description = "Web-based DVR management interface for HDHomeRun network TV tuner
 readme = "README.md"
 requires-python = ">=3.13"
 authors = [
-    { name = "PyHDHRDVR Contributors" }
+    { name = "PyDVR Contributors" }
 ]
 keywords = ["dvr", "hdhomerun", "recording", "tv", "schedules-direct"]
 classifiers = [

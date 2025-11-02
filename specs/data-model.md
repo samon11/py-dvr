@@ -1,4 +1,4 @@
-# PyHDHRDVR Data Model Specification
+# PyDVR Data Model Specification
 
 **Version:** 1.0
 **Date:** 2025-10-31
@@ -19,7 +19,7 @@
 
 ## Overview
 
-This document defines the complete data model for the PyHDHRDVR application. The model supports:
+This document defines the complete data model for the PyDVR application. The model supports:
 - TV guide data from Schedules Direct
 - HDHomeRun device configuration
 - Recording schedules (one-time and series)

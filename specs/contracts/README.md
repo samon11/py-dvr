@@ -1,6 +1,6 @@
 # API Contracts
 
-This directory contains API contract specifications for the PyHDHRDVR application.
+This directory contains API contract specifications for the PyDVR application.
 
 ## Contract Files
 

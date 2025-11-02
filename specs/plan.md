@@ -1,4 +1,4 @@
-# PyHDHRDVR - Project Requirements Documentation
+# PyDVR - Project Requirements Documentation
 
 **Document Version:** 1.0
 **Date:** 2025-10-31
@@ -9,7 +9,7 @@
 ## 1. PROJECT OVERVIEW
 
 ### 1.1 Project Description
-**PyHDHRDVR** is a web-based DVR management interface for HDHomeRun network TV tuner devices. The application enables users to browse TV program schedules, search for content, and schedule recordings (both one-time and series) using a modern web interface.
+**PyDVR** is a web-based DVR management interface for HDHomeRun network TV tuner devices. The application enables users to browse TV program schedules, search for content, and schedule recordings (both one-time and series) using a modern web interface.
 
 ### 1.2 Primary Goals
 - Provide a lightweight, web-based alternative to commercial DVR solutions

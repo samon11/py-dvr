@@ -1,4 +1,4 @@
-# PyHDHRDVR
+# PyDVR
 
 A web-based DVR management interface for HDHomeRun network TV tuner devices. Schedule recordings, browse TV program schedules, and automatically capture live TV streams to disk.
 
@@ -16,7 +16,7 @@ A web-based DVR management interface for HDHomeRun network TV tuner devices. Sch
 
 ## Requirements
 
-- Python 3.13 or higher
+- Python 3.11 or higher
 - HDHomeRun network TV tuner device
 - Schedules Direct subscription ($25/year) - [Sign up here](https://www.schedulesdirect.org/)
 - Local network access to HDHomeRun device

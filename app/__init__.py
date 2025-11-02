@@ -1,5 +1,5 @@
 """
-PyHDHRDVR - HDHomeRun DVR Management Application
+PyDVR - HDHomeRun DVR Management Application
 
 A web-based DVR management interface for HDHomeRun network TV tuner devices.
 """

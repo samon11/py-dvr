@@ -1,4 +1,4 @@
-"""Command-line interface for PyHDHRDVR.
+"""Command-line interface for PyDVR.
 
 This module provides CLI commands for managing the DVR system,
 including manual guide data synchronization and other administrative tasks.
@@ -18,7 +18,7 @@ from app.services.guide_sync import GuideDataSync
 
 @click.group()
 def cli():
-    """PyHDHRDVR CLI - Command-line tools for DVR management."""
+    """PyDVR CLI - Command-line tools for DVR management."""
     pass
 
 

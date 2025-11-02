@@ -1,4 +1,4 @@
-"""SQLAlchemy models for PyHDHRDVR.
+"""SQLAlchemy models for PyDVR.
 
 This package contains all database models following the Single Responsibility
 Principle, with each model in its own module for better maintainability.

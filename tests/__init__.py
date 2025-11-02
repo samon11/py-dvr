@@ -1,1 +1,1 @@
-"""Tests package for PyHDHRDVR."""
+"""Tests package for PyDVR."""
