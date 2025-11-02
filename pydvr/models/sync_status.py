@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from sqlalchemy import Column, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base
+from pydvr.models.base import Base
 
 
 class SyncStatus(Base):

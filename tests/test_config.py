@@ -11,7 +11,7 @@ from tempfile import TemporaryDirectory
 import pytest
 from pydantic import ValidationError
 
-from app.config import Settings, get_settings, reload_settings
+from pydvr.config import Settings, get_settings, reload_settings
 
 
 class TestSettingsValidation:

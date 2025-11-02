@@ -13,9 +13,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.services.lineup_service import LineupService
-from app.schemas.schedules_direct import (
+from pydvr.database import get_db
+from pydvr.services.lineup_service import LineupService
+from pydvr.schemas.schedules_direct import (
     Headend,
     AddLineupResponse,
     DeleteLineupResponse,
@@ -49,7 +49,7 @@ async def lineups_page(request: Request, db: Session = Depends(get_db)) -> HTMLR
     Returns:
         HTMLResponse: Rendered lineups.html template
     """
-    from app.main import templates
+    from pydvr.main import templates
 
     service = LineupService(db)
     try:

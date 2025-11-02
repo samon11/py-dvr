@@ -6,7 +6,7 @@ from sqlalchemy import pool
 from alembic import context
 
 # Import our models for autogenerate support
-from app.models import Base
+from pydvr.models import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -15,7 +15,7 @@ config = context.config
 # Override sqlalchemy.url from our application settings if available
 # For migrations, we can use the database_url from alembic.ini or environment
 try:
-    from app.config import get_settings
+    from pydvr.config import get_settings
     settings = get_settings()
     config.set_main_option("sqlalchemy.url", settings.database_url)
 except Exception:

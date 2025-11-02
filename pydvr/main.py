@@ -17,8 +17,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from app.config import get_settings
-from app.services.recorder import RecordingScheduler
+from pydvr.config import get_settings
+from pydvr.services.recorder import RecordingScheduler
 
 # Initialize settings
 settings = get_settings()
@@ -36,8 +36,8 @@ async def sync_guide_data_job():
     This job runs daily at 4 AM to synchronize guide data from Schedules Direct.
     It fetches lineups, stations, schedules, and program metadata for the next 3 days.
     """
-    from app.database import get_db
-    from app.services.guide_sync import GuideDataSync
+    from pydvr.database import get_db
+    from pydvr.services.guide_sync import GuideDataSync
 
     db = next(get_db())
     try:
@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
     - Stops recording scheduler
     - Performs cleanup tasks
     """
-    from app.database import SessionLocal
+    from pydvr.database import SessionLocal
 
     # Startup
     print(f"PyDVR starting on {settings.host}:{settings.port}")
@@ -138,7 +138,7 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # Register routers
-from app.routes import lineups, guide, recordings
+from pydvr.routes import lineups, guide, recordings
 app.include_router(lineups.router)
 app.include_router(guide.router)
 app.include_router(recordings.router)
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(
-        "app.main:app",
+        "pydvr.main:app",
         host=settings.host,
         port=settings.port,
         reload=settings.debug,

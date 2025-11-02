@@ -18,8 +18,8 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.config import get_settings
-from app.models import Base
+from pydvr.config import get_settings
+from pydvr.models import Base
 
 
 def _enable_sqlite_foreign_keys(dbapi_conn: Any, _: Any) -> None:

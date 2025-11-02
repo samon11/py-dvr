@@ -16,8 +16,8 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-from app.config import get_settings
-from app.schemas.schedules_direct import (
+from pydvr.config import get_settings
+from pydvr.schemas.schedules_direct import (
     TokenResponse,
     UserLineup,
     LineupStationsResponse,

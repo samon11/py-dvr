@@ -4,9 +4,9 @@ import pytest_asyncio
 import json
 from datetime import datetime, timezone, timedelta
 
-from app.services.schedules_direct import SchedulesDirectClient, SDError
-from app.config import get_settings
-from app.schemas.schedules_direct import (
+from pydvr.services.schedules_direct import SchedulesDirectClient, SDError
+from pydvr.config import get_settings
+from pydvr.schemas.schedules_direct import (
     TokenResponse,
     UserLineup,
     LineupStationsResponse,

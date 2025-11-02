@@ -22,13 +22,13 @@ The models follow these principles:
     - Comprehensive docstrings
 """
 
-from app.models.base import Base
-from app.models.lineup import Lineup
-from app.models.program import Program
-from app.models.recording import Recording, RecordingStatus
-from app.models.schedule import Schedule
-from app.models.station import Station
-from app.models.sync_status import SyncStatus
+from pydvr.models.base import Base
+from pydvr.models.lineup import Lineup
+from pydvr.models.program import Program
+from pydvr.models.recording import Recording, RecordingStatus
+from pydvr.models.schedule import Schedule
+from pydvr.models.station import Station
+from pydvr.models.sync_status import SyncStatus
 
 __all__ = [
     "Base",

@@ -13,9 +13,9 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session, joinedload
 
-from app.config import get_settings
-from app.database import get_db
-from app.models import Recording, RecordingStatus, Schedule
+from pydvr.config import get_settings
+from pydvr.database import get_db
+from pydvr.models import Recording, RecordingStatus, Schedule
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -359,7 +359,7 @@ async def scheduled_recordings_page(
     Returns:
         HTMLResponse: Rendered scheduled.html template with recordings list
     """
-    from app.main import templates
+    from pydvr.main import templates
 
     try:
         # Query scheduled and in-progress recordings with joined schedule/program/station data
@@ -455,7 +455,7 @@ async def recordings_library_page(
     import os
     import shutil
     from pathlib import Path
-    from app.main import templates
+    from pydvr.main import templates
 
     try:
         # Query completed recordings with joined schedule/program/station data

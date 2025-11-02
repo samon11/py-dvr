@@ -10,10 +10,10 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base
+from pydvr.models.base import Base
 
 if TYPE_CHECKING:
-    from app.models.station import Station
+    from pydvr.models.station import Station
 
 
 class Lineup(Base):

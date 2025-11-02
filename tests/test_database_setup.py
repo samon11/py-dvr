@@ -14,8 +14,8 @@ from pathlib import Path
 import pytest
 from sqlalchemy import inspect
 
-from app.db import DatabaseManager
-from app.models import Base, Program, Recording, RecordingStatus, Schedule, Station
+from pydvr.db import DatabaseManager
+from pydvr.models import Base, Program, Recording, RecordingStatus, Schedule, Station
 
 
 @pytest.fixture

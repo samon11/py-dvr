@@ -11,12 +11,12 @@ from typing import TYPE_CHECKING
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base
+from pydvr.models.base import Base
 
 if TYPE_CHECKING:
-    from app.models.program import Program
-    from app.models.recording import Recording
-    from app.models.station import Station
+    from pydvr.models.program import Program
+    from pydvr.models.recording import Recording
+    from pydvr.models.station import Station
 
 
 class Schedule(Base):

@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base
+from pydvr.models.base import Base
 
 if TYPE_CHECKING:
-    from app.models.schedule import Schedule
+    from pydvr.models.schedule import Schedule
 
 
 class Program(Base):

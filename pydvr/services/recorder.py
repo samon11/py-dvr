@@ -21,10 +21,10 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.config import get_settings
-from app.models.recording import Recording, RecordingStatus
-from app.models.schedule import Schedule
-from app.services.hdhomerun import HDHomeRunClient, HDHomeRunError, TunerNotAvailableError
+from pydvr.config import get_settings
+from pydvr.models.recording import Recording, RecordingStatus
+from pydvr.models.schedule import Schedule
+from pydvr.services.hdhomerun import HDHomeRunClient, HDHomeRunError, TunerNotAvailableError
 
 logger = logging.getLogger(__name__)
 

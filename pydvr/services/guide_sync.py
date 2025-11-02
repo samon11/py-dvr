@@ -13,13 +13,13 @@ from sqlalchemy.dialects.sqlite import insert
 
 from sqlalchemy import delete, select
 
-from app.services.schedules_direct import SchedulesDirectClient
-from app.models.lineup import Lineup
-from app.models.station import Station
-from app.models.schedule import Schedule
-from app.models.program import Program
-from app.models.sync_status import SyncStatus
-from app.models.recording import Recording, RecordingStatus
+from pydvr.services.schedules_direct import SchedulesDirectClient
+from pydvr.models.lineup import Lineup
+from pydvr.models.station import Station
+from pydvr.models.schedule import Schedule
+from pydvr.models.program import Program
+from pydvr.models.sync_status import SyncStatus
+from pydvr.models.recording import Recording, RecordingStatus
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session

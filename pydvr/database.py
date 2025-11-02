@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from alembic.config import Config
 from alembic import command
 
-from app.config import get_settings
+from pydvr.config import get_settings
 
 # Get settings
 settings = get_settings()

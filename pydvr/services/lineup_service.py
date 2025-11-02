@@ -10,10 +10,10 @@ from typing import List
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.sqlite import insert
 
-from app.services.schedules_direct import SchedulesDirectClient
-from app.models.lineup import Lineup
-from app.models.station import Station
-from app.schemas.schedules_direct import (
+from pydvr.services.schedules_direct import SchedulesDirectClient
+from pydvr.models.lineup import Lineup
+from pydvr.models.station import Station
+from pydvr.schemas.schedules_direct import (
     Headend,
     UserLineup,
     AddLineupResponse,

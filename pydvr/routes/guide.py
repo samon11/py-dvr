@@ -14,9 +14,9 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session, joinedload
 
-from app.database import get_db
-from app.models import Schedule, Program, Station, Recording
-from app.models.recording import RecordingStatus
+from pydvr.database import get_db
+from pydvr.models import Schedule, Program, Station, Recording
+from pydvr.models.recording import RecordingStatus
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ async def guide_page(
     Returns:
         HTMLResponse: Rendered guide.html template with programs and stations list
     """
-    from app.main import templates
+    from pydvr.main import templates
 
     try:
         # Get today's date for the date picker

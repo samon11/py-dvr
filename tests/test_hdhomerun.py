@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from app.services.hdhomerun import (
+from pydvr.services.hdhomerun import (
     ChannelInfo,
     DeviceInfo,
     DeviceNotFoundError,
