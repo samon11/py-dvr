@@ -52,7 +52,7 @@ async def sync_guide_data_job():
     db = next(get_db())
     try:
         sync = GuideDataSync(db)
-        result = await sync.sync_guide_data(days=3)
+        result = await sync.sync_guide_data(days=7)
         logger.info(
             f"Guide sync completed: {result.schedules_updated} schedules, "
             f"{result.programs_updated} programs"
